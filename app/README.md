@@ -1,0 +1,81 @@
+# Prep ANPD — Especialista em Regulação da Proteção de Dados
+
+Plataforma de preparação (mobile-first) para o **primeiro concurso da ANPD**.
+Não é um repositório passivo de conteúdo: é um **motor de decisão de estudo** —
+todo dia o app diz *o que estudar, por quê e por quanto tempo*.
+
+> **Estado:** modo **pré-edital** (edital previsto para dez/2026, provas a partir
+> de jan/2027). Disciplinas entram como `provisorio` até o edital confirmar.
+
+## Como rodar
+
+App 100% client-side, **sem build**. Basta servir a pasta por HTTP:
+
+```bash
+python3 -m http.server 8000
+# abrir http://localhost:8000/app/
+```
+
+No GitHub Pages já fica disponível em `…/app/`. (A raiz do repositório continua
+servindo o convite original, intocado.)
+
+## Decisões de arquitetura (v1)
+
+- **Usuário único, schema multiusuário.** Existe um único usuário fixo (Ricardo),
+  mas **toda entidade carrega `user_id`**. Adicionar um 2º usuário no futuro é uma
+  *migração de backend*, não uma reescrita. Ver `src/store.js`.
+- **Persistência local** (`localStorage`), uma "tabela" por entidade da seção 21
+  do briefing. `exportState()` já produz o JSON base para migrar a um backend.
+- **`RevisaoAgendada` — Opção 1 (App-level integrity).** Associação polimórfica
+  (`item_id` + `tipo_item`) sem FK real; a aplicação limpa revisões órfãs ao
+  deletar flashcard/questão/resumo (`store.remove`). A Opção 2 (tabelas separadas
+  + view) fica para uma fase futura.
+
+## O que está implementado (Fase 1 + motor da Fase 2)
+
+| Área | Arquivo |
+|------|---------|
+| Camada de dados + seed + `user_id` | `src/store.js` |
+| SRS — **Leitner adaptado de 5 caixas** (fórmula documentada) | `src/srs.js` |
+| **Motor de priorização** (fórmula da seção 6, normalizada) | `src/priority.js` |
+| Plano do dia, interleaving, fila de revisão unificada, faixas | `src/scheduler.js` |
+| Telas (Hoje, Revisar, Conteúdo, Cards, Questões, Painel) + Pomodoro | `src/views.js` |
+| Helpers de UI / badges / modal | `src/ui.js` |
+| Roteador / bootstrap | `src/app.js` |
+
+Cobre: tela **Hoje** (home), **Pomodoro** com recuperação ativa ao final,
+**resumo com correção por checklist** (Fase 1 = manual), **flashcards** (CRUD +
+SRS), **banco de questões** (múltipla escolha *e* certo/errado), **fila de
+revisão unificada**, **dashboard com faixas qualitativas** (nunca um % solto),
+**metas**, e **memória de progresso automática** (o app nunca pergunta "onde
+você parou").
+
+### As duas fórmulas (documentadas no código)
+
+- **SRS (`src/srs.js`)** — Leitner 5 caixas com intervalos `1·3·7·16·35` dias.
+  Promoção/rebaixamento depende de (1) acerto/erro, (2) tempo de resposta e
+  (3) taxa de acerto das últimas 3 exposições.
+- **Priorização (`src/priority.js`)** — produto de 5 fatores normalizados 0..1:
+  `peso × atraso × desempenho × esquecimento × (1 − domínio)`. Tópico nunca
+  estudado recebe os fatores forçados da seção 6 e compete como revisão vencida.
+  O **amortecimento** `base + (1−base)·fator` (base 0,2) é *ligado por padrão*
+  (configurável no Painel) para evitar que um único fator zere o tópico.
+
+## Regras de conteúdo (seções 4 e 19)
+
+Todo conteúdo é rotulado e **visualmente distinto** por tipo:
+`texto_legal` · `interpretacao_oficial` · `explicacao_didatica` ·
+`hipotese_de_cobranca`. Texto legal nunca é gerado por IA; conteúdo de IA entra
+como **rascunho** (`revisado_por_humano: false`) até revisão. Não existe
+histórico de prova da ANPD — questões de bancas afins entram como
+**fonte análoga**.
+
+## Roadmap (não construído ainda)
+
+- **Fase 3** — correção de resumo por **IA semântica item a item** (hoje é
+  checklist manual; *de propósito não fazemos keyword-matching disfarçado de IA*),
+  geração automática de flashcards a partir de erros, e **PDF** do caderno de
+  revisão. Exigem chave de API server-side.
+- **Fase 4** — módulo ANPD ligado a artigos da LGPD e **migração assistida
+  pré→pós-edital** (você cola o edital, a IA sugere os matches, **você confirma
+  cada um**; nada é apagado, tópicos que saem viram `fora_do_edital`).
