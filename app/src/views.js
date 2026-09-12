@@ -16,6 +16,7 @@ import {
   badgeEdital, badgePeso, badgeTipoConteudo, badgeRevisado, TIPO_CONTEUDO,
 } from './ui.js';
 import { gerarCaderno } from './caderno.js';
+import { sugerirMatches, aplicarMigracao } from './migracao.js';
 
 let refresh = () => {};
 export function setRefresh(fn) { refresh = fn; }
@@ -601,26 +602,51 @@ function formDisciplina(id) {
 }
 function formTopico(disciplinaId, id) {
   const t = id ? store.get('topico', id) : null;
+  const vinc = new Set(t?.vinculos || []);
+  // Vínculos ANPD↔LGPD: tópicos de disciplinas cujo nome contém "LGPD" (exceto o próprio).
+  const lgpdTopicos = topicosLGPD().filter(x => x.id !== id);
+  const vincOpts = lgpdTopicos.map(x =>
+    `<option value="${esc(x.id)}" ${vinc.has(x.id) ? 'selected' : ''}>${esc(x.nome)}</option>`).join('');
   const body = openModal(`
     <label class="field"><span class="lab">Nome do tópico</span><input id="t-nome" value="${esc(t?.nome || '')}"></label>
     <label class="field"><span class="lab">Ordem</span><input id="t-ordem" type="number" value="${t?.ordem || 1}"></label>
     <label class="field"><span class="lab">Pontos-chave (um por linha) — usados na correção de resumo</span>
       <textarea id="t-pk" placeholder="definição de dado pessoal&#10;definição de dado sensível">${esc((t?.pontos_chave || []).join('\n'))}</textarea></label>
+    ${lgpdTopicos.length ? `<label class="field"><span class="lab">Vínculos com artigos da LGPD (Ctrl/⌘ para multiselecionar)</span>
+      <select id="t-vinc" multiple size="${Math.min(6, lgpdTopicos.length)}">${vincOpts}</select>
+      <small class="hint">Liga este tópico (ex.: material ANPD) aos artigos correspondentes da LGPD.</small></label>` : ''}
     <button class="btn primary" id="t-save">Salvar</button>
   `, { title: id ? 'Editar tópico' : 'Novo tópico' });
   body.querySelector('#t-save').onclick = () => {
     const nome = body.querySelector('#t-nome').value.trim();
     const ordem = +body.querySelector('#t-ordem').value || 1;
     const pontos_chave = body.querySelector('#t-pk').value.split('\n').map(s => s.trim()).filter(Boolean);
+    const selVinc = body.querySelector('#t-vinc');
+    const vinculos = selVinc ? Array.from(selVinc.selectedOptions).map(o => o.value) : (t?.vinculos || []);
     if (!nome) return toast('Informe o nome');
-    if (id) store.update('topico', id, { nome, ordem, pontos_chave });
+    if (id) store.update('topico', id, { nome, ordem, pontos_chave, vinculos });
     else {
       const disc = store.get('disciplina', disciplinaId);
-      store.insert('topico', { disciplina_id: disciplinaId, nome, ordem, pontos_chave,
+      store.insert('topico', { disciplina_id: disciplinaId, nome, ordem, pontos_chave, vinculos,
         status_edital: disc ? disc.status_edital : 'provisorio', fora_do_edital: false });
     }
     closeModal(); refresh();
   };
+}
+/** Tópicos das disciplinas cujo nome contém "LGPD". */
+function topicosLGPD() {
+  const ids = new Set(store.all('disciplina').filter(d => /lgpd/i.test(d.nome)).map(d => d.id));
+  return store.all('topico').filter(t => ids.has(t.disciplina_id));
+}
+/** Renderiza os vínculos LGPD de um tópico (links clicáveis). */
+function vinculosHtml(t) {
+  const ids = t.vinculos || [];
+  if (!ids.length) return '';
+  const links = ids.map(vid => {
+    const vt = store.get('topico', vid);
+    return vt ? `<a class="chip" href="#/topico/${esc(vid)}" style="text-decoration:none">🔗 ${esc(vt.nome)}</a>` : '';
+  }).filter(Boolean).join('');
+  return links ? `<div class="card tight"><h3>Vínculos com a LGPD</h3><div>${links}</div></div>` : '';
 }
 
 /* ---- tela de um tópico (conteúdo + ações) ------------------------------- */
@@ -653,6 +679,7 @@ function viewTopico(id) {
       ${prog ? `<span class="dim" style="font-size:12px">· caixa ${prog.srs.box}/5 · confiança ${(prog.confianca_atual * 100).toFixed(0)}%</span>` : '<span class="dim" style="font-size:12px">· nunca estudado</span>'}
     </div>
     <div class="card tight"><h3>Pontos-chave</h3><div>${pk}</div></div>
+    ${vinculosHtml(t)}
     <div class="row" style="gap:8px;margin:12px 0">
       <button class="btn primary" data-pomo-top="${esc(id)}">▶ Pomodoro</button>
       <button class="btn good" data-ra="${esc(id)}">🧠 Recuperação ativa</button>
@@ -783,10 +810,13 @@ function viewPainel() {
       <button class="btn primary" id="caderno">📄 Gerar caderno de revisão</button>
     </div>
 
-    <h2>Migração pré-edital → pós-edital (Fase 4)</h2>
-    <div class="alert info" style="font-size:12.5px">Quando o edital for publicado, a reconciliação assistida (você cola o edital,
-      a IA sugere os matches e <b>você confirma cada um</b>) entra aqui. Nenhum histórico é apagado; tópicos que saírem do
-      edital ficam marcados como <b>fora do edital</b> e continuam visíveis. <i>Recurso planejado para a Fase 4.</i></div>
+    <h2>Migração pré-edital → pós-edital</h2>
+    <div class="card">
+      <p class="subtle" style="margin:0 0 10px;font-size:13px">Quando o edital sair: você cola a lista de
+        disciplinas/tópicos, o sistema <b>sugere</b> os matches com a matriz provisória e <b>você confirma cada um</b>.
+        Nada é apagado — o que sair do edital fica marcado <b>fora do edital</b> e continua no histórico.</p>
+      <button class="btn primary" id="migracao">🔀 Iniciar reconciliação do edital</button>
+    </div>
 
     <h2>Dados</h2>
     <div class="card"><div class="row wrap" style="gap:8px">
@@ -797,6 +827,7 @@ function viewPainel() {
 }
 function wirePainel() {
   root().querySelector('#caderno').onclick = () => gerarCaderno();
+  root().querySelector('#migracao').onclick = () => fluxoMigracaoPasso1();
   root().querySelector('#nova-meta').onclick = () => formMeta();
   root().querySelectorAll('[data-delm]').forEach(b => b.onclick = () => { store.remove('meta', b.dataset.delm); refresh(); });
   root().querySelector('#cfg-save').onclick = () => {
@@ -863,6 +894,93 @@ function rotuloMeta(m) {
   const t = { horas: 'Horas de estudo', questoes: 'Questões respondidas', modulos: 'Sessões concluídas', revisoes: 'Revisões feitas' }[m.tipo];
   const p = { diario: 'por dia', semanal: 'por semana', mensal: 'por mês' }[m.periodo];
   return `${t} ${p}`;
+}
+
+/* =============================================================================
+ * MIGRAÇÃO ASSISTIDA pré→pós-edital (seção 18) — fluxo em 2 passos
+ * ============================================================================= */
+function fluxoMigracaoPasso1() {
+  const provaAtual = store.all('user')[0]?.prova_data || '';
+  const body = openModal(`
+    <p class="subtle" style="font-size:13px;margin-top:0">Cole a lista de disciplinas/tópicos do edital,
+      <b>uma por linha</b>. O sistema vai sugerir os matches; você confirma no próximo passo.</p>
+    <label class="field"><span class="lab">Disciplinas/tópicos do edital</span>
+      <textarea id="mig-txt" style="min-height:150px" placeholder="Ex.:
+Proteção de Dados Pessoais (Lei nº 13.709/2018)
+Regulação e atos normativos da ANPD
+Direito Administrativo
+Segurança da Informação
+Língua Portuguesa
+Raciocínio Lógico"></textarea></label>
+    <label class="field"><span class="lab">Data da prova (opcional)</span>
+      <input type="date" id="mig-prova" value="${esc(provaAtual)}"></label>
+    <button class="btn primary" id="mig-next">Gerar sugestões →</button>
+    <small class="hint">A extração automática do PDF do edital por IA é uma melhoria futura (exige chave server-side).</small>
+  `, { title: '🔀 Migração — passo 1/2' });
+
+  body.querySelector('#mig-next').onclick = () => {
+    const linhas = body.querySelector('#mig-txt').value.split('\n').map(s => s.trim()).filter(Boolean);
+    if (!linhas.length) return toast('Cole ao menos uma linha do edital');
+    const provaData = body.querySelector('#mig-prova').value || null;
+    const { sugestoes, oficiais } = sugerirMatches(linhas);
+    fluxoMigracaoPasso2({ sugestoes, oficiais, provaData });
+  };
+}
+
+function fluxoMigracaoPasso2({ sugestoes, oficiais, provaData }) {
+  const optOficiais = (sel) => oficiais.map((o, i) =>
+    `<option value="${i}" ${i === sel ? 'selected' : ''}>${esc(o)}</option>`).join('');
+
+  const linhas = sugestoes.map((s, k) => `
+    <div class="card tight">
+      <div class="title">${esc(s.nomeProvisorio)}</div>
+      <div class="meta" style="margin:2px 0 8px">sugestão automática ${s.sugestaoIdx == null ? '— nenhuma' : `(similaridade ${s.score})`}</div>
+      <label class="field" style="margin-bottom:6px"><span class="lab">Corresponde a</span>
+        <select data-mig-sel="${k}">
+          <option value="-1" ${s.sugestaoIdx == null ? 'selected' : ''}>— sem correspondência (fora do edital)</option>
+          ${optOficiais(s.sugestaoIdx)}
+        </select></label>
+      <label class="field" style="margin-bottom:0"><span class="lab">Peso estratégico</span>
+        <select data-mig-peso="${k}">
+          <option value="alto" ${s.pesoAtual === 'alto' ? 'selected' : ''}>Alto</option>
+          <option value="medio" ${s.pesoAtual === 'medio' ? 'selected' : ''}>Médio</option>
+        </select></label>
+    </div>`).join('');
+
+  const body = openModal(`
+    <p class="subtle" style="font-size:13px;margin-top:0">Confirme ou corrija cada match. Itens do edital que
+      ninguém receber viram <b>disciplinas novas</b>. O que ficar "sem correspondência" é marcado
+      <b>fora do edital</b> (histórico preservado).</p>
+    ${linhas}
+    <div id="mig-novos" class="alert info" style="font-size:12.5px"></div>
+    <button class="btn primary" id="mig-apply">Confirmar migração</button>
+  `, { title: '🔀 Migração — passo 2/2' });
+
+  const idxEscolhidos = () => Array.from(body.querySelectorAll('[data-mig-sel]'))
+    .map(sel => +sel.value).filter(v => v >= 0);
+  const atualizaNovos = () => {
+    const usados = new Set(idxEscolhidos());
+    const novos = oficiais.filter((_, i) => !usados.has(i));
+    body.querySelector('#mig-novos').innerHTML = novos.length
+      ? `Itens do edital sem correspondência (viram disciplinas novas, confirmadas):<br>${novos.map(n => `• ${esc(n)}`).join('<br>')}`
+      : 'Todos os itens do edital foram atribuídos a uma disciplina existente.';
+  };
+  body.querySelectorAll('[data-mig-sel]').forEach(sel => sel.onchange = atualizaNovos);
+  atualizaNovos();
+
+  body.querySelector('#mig-apply').onclick = () => {
+    const decisoes = sugestoes.map((s, k) => {
+      const idx = +body.querySelector(`[data-mig-sel="${k}"]`).value;
+      const peso = body.querySelector(`[data-mig-peso="${k}"]`).value;
+      return { disciplinaId: s.disciplinaId, oficialNome: idx >= 0 ? oficiais[idx] : null, peso };
+    });
+    const usados = new Set(decisoes.filter(d => d.oficialNome).map(d => oficiais.indexOf(d.oficialNome)));
+    const novosOficiais = oficiais.filter((_, i) => !usados.has(i));
+    const r = aplicarMigracao({ decisoes, novosOficiais, provaData });
+    closeModal();
+    toast(`Migração aplicada: ${r.confirmadas} confirmada(s), ${r.novas} nova(s), ${r.foras} fora do edital`);
+    refresh();
+  };
 }
 
 /* =============================================================================

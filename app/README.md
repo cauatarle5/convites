@@ -77,12 +77,23 @@ como **rascunho** (`revisado_por_humano: false`) até revisão. Não existe
 histórico de prova da ANPD — questões de bancas afins entram como
 **fonte análoga**.
 
-## Roadmap (não construído ainda)
+Da **Fase 4**, já entram (sem depender de chave de API):
+- **Vínculo ANPD↔LGPD** (`src/views.js`, campo `vinculos` no tópico) — um tópico
+  (ex.: material/resolução da ANPD) pode apontar para os artigos da LGPD
+  correspondentes; os links aparecem clicáveis na tela do tópico.
+- **Migração assistida pré→pós-edital** (`src/migracao.js`) — você cola a lista
+  do edital, o sistema **sugere** matches por similaridade textual e **você
+  confirma/corrige cada um** (a sugestão não decide). Disciplinas casadas viram
+  `confirmado` (renomeadas para o nome oficial, peso ajustável); as sem
+  correspondência viram `fora_do_edital` (**nada é apagado**, seguem no
+  histórico); itens do edital não previstos viram disciplinas novas; a data da
+  prova e o tempo restante são recalculados.
 
-- **Fase 3 (restante)** — correção de resumo por **IA semântica item a item**
-  (hoje é checklist manual; *de propósito não fazemos keyword-matching disfarçado
-  de IA*). Exige chave de API server-side. (Flashcards automáticos e PDF já foram
-  entregues — ver acima.)
-- **Fase 4** — módulo ANPD ligado a artigos da LGPD e **migração assistida
-  pré→pós-edital** (você cola o edital, a IA sugere os matches, **você confirma
-  cada um**; nada é apagado, tópicos que saem viram `fora_do_edital`).
+## Roadmap (o que ainda depende de IA server-side)
+
+- **Correção de resumo por IA semântica item a item** (restante da Fase 3) — hoje
+  é checklist manual; *de propósito não fazemos keyword-matching disfarçado de IA*.
+- **Extração automática do PDF do edital por IA** (passo 2 da seção 18) — hoje a
+  lista do edital é colada/curada e a sugestão de match é por similaridade textual.
+
+Ambos exigem uma chave de API server-side; o resto das 4 fases está implementado.
