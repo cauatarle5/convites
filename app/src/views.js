@@ -15,6 +15,7 @@ import {
   esc, h, openModal, closeModal, toast, fmtMin,
   badgeEdital, badgePeso, badgeTipoConteudo, badgeRevisado, TIPO_CONTEUDO,
 } from './ui.js';
+import { gerarCaderno } from './caderno.js';
 
 let refresh = () => {};
 export function setRefresh(fn) { refresh = fn; }
@@ -774,6 +775,14 @@ function viewPainel() {
       <button class="btn" id="prova-save">Salvar data</button>
     </div>
 
+    <h2>Caderno de revisão (PDF)</h2>
+    <div class="card">
+      <p class="subtle" style="margin:0 0 10px;font-size:13px">Gera um caderno pessoal com conteúdo estudado,
+        resumos aprovados, pontos de reforço, erros recorrentes e flashcards. Regerável a qualquer momento —
+        use "Salvar como PDF" na janela de impressão.</p>
+      <button class="btn primary" id="caderno">📄 Gerar caderno de revisão</button>
+    </div>
+
     <h2>Migração pré-edital → pós-edital (Fase 4)</h2>
     <div class="alert info" style="font-size:12.5px">Quando o edital for publicado, a reconciliação assistida (você cola o edital,
       a IA sugere os matches e <b>você confirma cada um</b>) entra aqui. Nenhum histórico é apagado; tópicos que saírem do
@@ -787,6 +796,7 @@ function viewPainel() {
   `;
 }
 function wirePainel() {
+  root().querySelector('#caderno').onclick = () => gerarCaderno();
   root().querySelector('#nova-meta').onclick = () => formMeta();
   root().querySelectorAll('[data-delm]').forEach(b => b.onclick = () => { store.remove('meta', b.dataset.delm); refresh(); });
   root().querySelector('#cfg-save').onclick = () => {

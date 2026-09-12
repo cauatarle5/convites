@@ -50,6 +50,13 @@ revisão unificada**, **dashboard com faixas qualitativas** (nunca um % solto),
 **metas**, e **memória de progresso automática** (o app nunca pergunta "onde
 você parou").
 
+Da **Fase 3**, já entram (sem depender de chave de API):
+- **Geração automática de flashcards a partir de erros recorrentes** em questões
+  (`src/scheduler.js`), além dos gerados de pontos-chave faltantes em resumos.
+- **Caderno de revisão em PDF** (`src/caderno.js`) — conteúdo estudado, resumos
+  aprovados, pontos de reforço, erros recorrentes e flashcards, via impressão do
+  navegador ("salvar como PDF"), **regerável a qualquer momento**.
+
 ### As duas fórmulas (documentadas no código)
 
 - **SRS (`src/srs.js`)** — Leitner 5 caixas com intervalos `1·3·7·16·35` dias.
@@ -72,10 +79,10 @@ histórico de prova da ANPD — questões de bancas afins entram como
 
 ## Roadmap (não construído ainda)
 
-- **Fase 3** — correção de resumo por **IA semântica item a item** (hoje é
-  checklist manual; *de propósito não fazemos keyword-matching disfarçado de IA*),
-  geração automática de flashcards a partir de erros, e **PDF** do caderno de
-  revisão. Exigem chave de API server-side.
+- **Fase 3 (restante)** — correção de resumo por **IA semântica item a item**
+  (hoje é checklist manual; *de propósito não fazemos keyword-matching disfarçado
+  de IA*). Exige chave de API server-side. (Flashcards automáticos e PDF já foram
+  entregues — ver acima.)
 - **Fase 4** — módulo ANPD ligado a artigos da LGPD e **migração assistida
   pré→pós-edital** (você cola o edital, a IA sugere os matches, **você confirma
   cada um**; nada é apagado, tópicos que saem viram `fora_do_edital`).

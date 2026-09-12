@@ -79,6 +79,8 @@ export function registrarTentativa({ questaoId, acertou, tempo_s, respostaDada }
     if (erros >= 2) {
       agendarRevisao(questaoId, 'questao', todayISO()); // reforço imediato
       marcarPontoFraco(q.topico_id);
+      // Geração automática de flashcard a partir do erro recorrente (seção 11).
+      gerarFlashcardDeQuestao(q);
     }
   }
   return tent;
@@ -87,6 +89,27 @@ export function registrarTentativa({ questaoId, acertou, tempo_s, respostaDada }
 function marcarPontoFraco(topicoId) {
   const p = garanteProgresso(topicoId);
   store.update('topico_progresso', p.id, { ponto_fraco: true });
+}
+
+/** Cria um flashcard a partir de uma questão errada (evita duplicar). */
+function gerarFlashcardDeQuestao(q) {
+  const origem = `questao:${q.id}`;
+  const jaExiste = store.where('flashcard', f => f.origem === origem).length;
+  if (jaExiste) return null;
+  let verso;
+  if (q.tipo === 'certo_errado') {
+    verso = q.resposta_ce ? 'CERTO' : 'ERRADO';
+  } else {
+    const c = (q.alternativas || []).find(a => a.correta);
+    verso = c ? c.texto : '(ver gabarito)';
+  }
+  return store.insert('flashcard', {
+    topico_id: q.topico_id,
+    frente: q.enunciado,
+    verso,
+    origem, // rastreia a questão de origem
+    srs: novoEstadoSRS(todayISO()),
+  });
 }
 
 /* ---- FLASHCARDS (seção 10) ---------------------------------------------- */
