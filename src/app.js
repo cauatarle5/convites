@@ -40,6 +40,16 @@ function boot() {
   if (!location.hash) location.hash = '#/hoje';
   atualizarCountdown();
   navigate();
+  registrarServiceWorker();
+}
+
+/* PWA: registra o service worker (offline + instalável). Falha silenciosa em
+ * contextos sem SW (ex.: file://) — o app continua funcionando normalmente. */
+function registrarServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => { /* sem PWA, tudo bem */ });
+  });
 }
 
 boot();

@@ -24,7 +24,10 @@ src/                # ES modules do app (sem build)
   migracao.js       # reconciliação assistida pré/pós-edital
   ia.js             # adaptador cliente p/ o backend de IA (opcional)
   seed_content.js   # conteúdo-semente idempotente (NÃO semeia texto_legal)
-  app.js            # bootstrap + hash router
+  app.js            # bootstrap + hash router; registra o service worker
+manifest.webmanifest # PWA (instalável)
+sw.js               # service worker: precache do app shell (bump CACHE ao mudar assets)
+icons/              # ícones PNG do PWA (bullseye da marca)
 server/             # backend de IA (Cloudflare Worker) — chave fica aqui
 convite/index.html  # convite original (não relacionado ao app)
 README.md           # doc do produto e das fases
@@ -42,6 +45,11 @@ README.md           # doc do produto e das fases
   um site estático — nada de node_modules no repositório).
 - O único erro de console esperado localmente é o Google Fonts sendo bloqueado
   pelo proxy do sandbox; em produção carrega normal. Ignore `net::ERR_*`.
+- Ícones do PWA: sem Pillow no ambiente; foram gerados rasterizando um SVG com o
+  próprio Chromium (Playwright `page.screenshot`). Ao trocar o desenho, regenere
+  os PNGs em `icons/` e faça bump do `CACHE` em `sw.js`.
+- Testar service worker: use um contexto Playwright com `serviceWorkers: 'allow'`
+  e `waitUntil: 'load'`.
 
 ## Regras de conteúdo (NÃO QUEBRAR — seções 4/19 do briefing)
 

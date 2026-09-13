@@ -20,6 +20,14 @@ No GitHub Pages a plataforma é a home (`https://cauatarle5.github.io/convites/`
 O convite original foi preservado em `/convite/`
 (`https://cauatarle5.github.io/convites/convite/`).
 
+### PWA (instalar no celular, funciona offline)
+
+É um **Progressive Web App**: `manifest.webmanifest` + service worker (`sw.js`)
+que faz precache do app shell. No celular, abra a home e use "Adicionar à tela
+inicial" — o app abre em tela cheia e **funciona offline** (os dados já ficam no
+`localStorage`). Ícones em `icons/`. Ao mudar assets, incremente `CACHE` no
+`sw.js` para invalidar o cache antigo.
+
 ## Decisões de arquitetura (v1)
 
 - **Usuário único, schema multiusuário.** Existe um único usuário fixo (Ricardo),
