@@ -464,6 +464,8 @@ function formQuestao() {
     </div>
     <label class="field"><span class="row"><input type="checkbox" id="q-fa" checked style="width:auto"> <span>Fonte análoga (não é questão real da ANPD)</span></span></label>
     <label class="field"><span class="lab">Descrição da fonte</span><input id="q-fonte" placeholder="Ex.: Cebraspe 2023, questão adaptada"></label>
+    <label class="field"><span class="lab">Comentário do gabarito (opcional) — mostrado após responder</span>
+      <textarea id="q-coment" placeholder="Por que a resposta correta é essa? (fundamento, artigo, etc.)"></textarea></label>
     <button class="btn primary" id="q-save">Salvar questão</button>
   `, { title: 'Nova questão' });
   const tipoSel = body.querySelector('#q-tipo');
@@ -480,6 +482,7 @@ function formQuestao() {
       dificuldade: body.querySelector('#q-dif').value,
       fonte_analoga: body.querySelector('#q-fa').checked,
       fonte_desc: body.querySelector('#q-fonte').value.trim(),
+      comentario: body.querySelector('#q-coment').value.trim(),
     };
     if (!rec.topico_id || !rec.enunciado) return toast('Preencha tópico e enunciado');
     if (tipo === 'multipla') {
@@ -530,6 +533,7 @@ function abrirQuiz(ids, revisaoId) {
       fb.hidden = false;
       fb.innerHTML = `<div class="alert ${acertou ? 'info' : 'danger'}">${acertou ? '✔ Correto!' : '✕ Incorreto.'}
         ${q.tipo === 'certo_errado' ? `Gabarito: <b>${q.resposta_ce ? 'CERTO' : 'ERRADO'}</b>.` : `Correta: <b>${gabaritoMult(q)}</b>.`}
+        ${q.comentario ? `<br><span class="dim" style="font-style:italic">${esc(q.comentario)}</span>` : ''}
         ${!acertou ? '<br>Erro recorrente aqui agenda reforço automaticamente (revisão + flashcards).' : ''}</div>
         <button class="btn primary" id="q-next" style="width:100%">Próxima</button>`;
       fb.querySelector('#q-next').onclick = () => { i++; mostra(); };
@@ -893,7 +897,8 @@ function wirePainel() {
   root().querySelector('#seed-lgpd').onclick = () => {
     const r = carregarSeed();
     if (r.erro) return toast(r.erro);
-    toast(`Semente: +${r.topicosAdd} tópicos, +${r.questoesAdd} questões em ${r.disciplinasAtingidas} disciplinas`);
+    const extra = r.comentariosAdd ? `, +${r.comentariosAdd} comentários` : '';
+    toast(`Semente: +${r.topicosAdd} tópicos, +${r.questoesAdd} questões${extra} em ${r.disciplinasAtingidas} disciplinas`);
     refresh();
   };
   root().querySelector('#cfg-ia-save').onclick = () => {

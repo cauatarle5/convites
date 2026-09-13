@@ -19,6 +19,46 @@ import { store } from './store.js';
 
 const MARCA = 'seed_v1';
 
+/* Comentários do gabarito (mostrados após responder), por enunciado. Fecham o
+ * ciclo de aprendizado e documentam o porquê de cada resposta correta. */
+const COMENTARIOS = {
+  'Segundo a LGPD, dado pessoal é:': 'Art. 5º, I: dado pessoal é informação relacionada a pessoa natural identificada ou identificável.',
+  'Dado sobre a saúde de uma pessoa é considerado dado pessoal sensível pela LGPD.': 'Art. 5º, II: dado sobre saúde é dado pessoal sensível.',
+  'Na LGPD, o operador é a pessoa a quem se referem os dados pessoais objeto de tratamento.': 'Errado: quem se refere aos dados é o titular (Art. 5º, V). O operador (Art. 5º, VII) trata dados em nome do controlador.',
+  'O princípio que exige limitação do tratamento ao mínimo necessário para suas finalidades é o da:': 'Art. 6º, III: necessidade = limitação ao mínimo necessário para as finalidades.',
+  'O consentimento é a única base legal que autoriza o tratamento de dados pessoais na LGPD.': 'Errado: o Art. 7º traz dez bases legais; o consentimento é apenas uma delas.',
+  'Quando exigido, o consentimento do titular deve ser:': 'Art. 5º, XII e Art. 8º: livre, informado e inequívoco, para finalidades determinadas; vedadas autorizações genéricas.',
+  'O titular pode solicitar a portabilidade de seus dados a outro fornecedor, observados os regulamentos da ANPD.': 'Art. 18, V: portabilidade a outro fornecedor, conforme regulamentação da ANPD.',
+  'NÃO configura um direito do titular expressamente previsto na LGPD:': 'A indenização não é automática — depende de dano e responsabilização (Art. 42). Os demais são direitos do Art. 18.',
+  'Em caso de incidente de segurança que possa acarretar risco relevante aos titulares, o controlador deve comunicar a ANPD e o titular.': 'Art. 48: incidente com risco relevante deve ser comunicado à ANPD e ao titular.',
+  'Sobre a multa simples da LGPD, o teto por infração é de:': 'Art. 52, II: multa simples de até 2% do faturamento no Brasil, limitada a R$ 50 milhões por infração.',
+  'O encarregado (DPO) atua como canal de comunicação entre o controlador, os titulares e a ANPD.': 'Art. 41, §2º, I: o encarregado é canal de comunicação entre controlador, titulares e ANPD.',
+  'Compete à ANPD fiscalizar e aplicar sanções em caso de descumprimento da LGPD.': 'Compete à ANPD zelar, fiscalizar e aplicar sanções (Art. 52 e 55-K).',
+  'Os princípios expressos da Administração Pública no art. 37 da CF são:': 'Art. 37, caput, CF: Legalidade, Impessoalidade, Moralidade, Publicidade e Eficiência (LIMPE).',
+  'São requisitos (elementos) de validade do ato administrativo:': 'Competência, finalidade, forma, motivo e objeto (Lei 4.717/65, art. 2º).',
+  'A presunção de legitimidade é um atributo do ato administrativo.': 'Sim: junto com imperatividade e autoexecutoriedade, é atributo do ato administrativo.',
+  'O poder de polícia pode limitar o exercício de direitos individuais em benefício do interesse público.': 'Sim: o poder de polícia condiciona/limita direitos individuais em prol do interesse público.',
+  'As autarquias integram a administração pública indireta e têm personalidade jurídica de direito público.': 'Sim (DL 200/67): autarquia é da administração indireta, com personalidade de direito público.',
+  'A Lei nº 14.133/2021 é a atual Lei de Licitações e Contratos Administrativos.': 'Sim: a Lei 14.133/2021 substituiu a Lei 8.666/93.',
+  'Os três pilares clássicos da segurança da informação são:': 'Tríade CID: Confidencialidade, Integridade e Disponibilidade.',
+  'Na criptografia simétrica, a mesma chave é usada para cifrar e decifrar a informação.': 'Sim: criptografia simétrica usa a mesma chave para cifrar e decifrar.',
+  'Uma função de hash criptográfica é projetada para ser facilmente reversível.': 'Errado: hash criptográfico é unidirecional (não reversível).',
+  'O uso de um par de chaves pública e privada caracteriza a criptografia:': 'Par de chaves pública/privada caracteriza a criptografia assimétrica.',
+  'Ataque que usa mensagens fraudulentas para induzir a vítima a revelar dados é o:': 'Phishing: mensagens fraudulentas que enganam a vítima para obter dados.',
+  'O princípio do menor privilégio recomenda conceder ao usuário apenas os acessos necessários às suas tarefas.': 'Sim: menor privilégio = apenas os acessos necessários à tarefa.',
+  'Em "Refiro-me à aluna que chegou", o uso da crase está correto.': '"Referir-se a" + "a aluna" (feminino) = à. Crase correta.',
+  'Assinale a frase em que a crase é obrigatória:': '"Ir a" + "a escola" (fem., com artigo) = à. Nas demais não há artigo (a pé, a você, a ele) ou o termo não o exige.',
+  'Em "Fazem cinco anos que ele partiu", o verbo fazer está corretamente flexionado.': 'Errado: "fazer" indicando tempo é impessoal — "Faz cinco anos".',
+  'Em "Havia muitos alunos na sala", o verbo haver, no sentido de existir, é impessoal e fica no singular.': 'Sim: "haver" com sentido de existir é impessoal — "Havia".',
+  'Segundo o Acordo Ortográfico vigente, a palavra "ideia" não recebe acento.': 'Sim: paroxítonas com ditongo aberto "ei"/"oi" perderam o acento — "ideia".',
+  'A negação de "Todo A é B" é:': 'A negação de "Todo A é B" é "Algum A não é B" (existe A que não é B).',
+  'Pela lei de De Morgan, a negação de (p ∧ q) é (¬p ∨ ¬q).': 'Sim: De Morgan — ¬(p ∧ q) ≡ ¬p ∨ ¬q.',
+  'A negação de "Se chove, então molha" é "chove e não molha".': 'Sim: ¬(p → q) ≡ p ∧ ¬q — "chove e não molha".',
+  'Quantos anagramas distintos tem a palavra AMOR (todas as letras diferentes)?': '4 letras distintas: 4! = 24 anagramas.',
+  'A probabilidade de sair cara ao lançar uma moeda honesta é 1/2.': 'Moeda honesta: P(cara) = 1/2.',
+  'Quanto é 20% de 250?': '20% de 250 = 0,2 × 250 = 50.',
+};
+
 /* =============================================================================
  * DATASET por disciplina (match = regex sobre o nome da disciplina).
  * ============================================================================= */
@@ -331,7 +371,7 @@ const DATASET = [
  * importação idempotente
  * ============================================================================= */
 export function carregarSeed() {
-  let topicosAdd = 0, conteudosAdd = 0, questoesAdd = 0, disciplinasAtingidas = 0;
+  let topicosAdd = 0, conteudosAdd = 0, questoesAdd = 0, comentariosAdd = 0, disciplinasAtingidas = 0;
 
   DATASET.forEach(bloco => {
     const disc = store.all('disciplina').find(d => bloco.match.test(d.nome) && !d.fora_do_edital);
@@ -367,13 +407,19 @@ export function carregarSeed() {
     (bloco.questoes || []).forEach(q => {
       const topicoId = idPorNome[q.topico];
       if (!topicoId) return;
-      const existe = store.all('questao').some(x => x.enunciado === q.enunciado);
-      if (existe) return;
+      const comentario = COMENTARIOS[q.enunciado] || '';
+      const existente = store.all('questao').find(x => x.enunciado === q.enunciado);
+      if (existente) {
+        // backfill: adiciona o comentário a questões já semeadas que não o tinham
+        if (comentario && !existente.comentario) { store.update('questao', existente.id, { comentario }); comentariosAdd++; }
+        return;
+      }
       store.insert('questao', {
         topico_id: topicoId, tipo: q.tipo, enunciado: q.enunciado,
         dificuldade: q.dificuldade, fonte_analoga: true,
         fonte_desc: 'Questão autoral de treino (fonte análoga)',
         alternativas: q.alternativas || [],
+        comentario,
         ...(q.tipo === 'certo_errado' ? { resposta_ce: q.resposta_ce } : {}),
         seed: MARCA,
       });
@@ -381,7 +427,7 @@ export function carregarSeed() {
     });
   });
 
-  return { topicosAdd, conteudosAdd, questoesAdd, disciplinasAtingidas };
+  return { topicosAdd, conteudosAdd, questoesAdd, comentariosAdd, disciplinasAtingidas };
 }
 
 /** Compatibilidade: nome antigo usado por versões anteriores da UI. */
