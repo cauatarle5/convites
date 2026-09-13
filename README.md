@@ -13,11 +13,12 @@ App 100% client-side, **sem build**. Basta servir a pasta por HTTP:
 
 ```bash
 python3 -m http.server 8000
-# abrir http://localhost:8000/app/
+# abrir http://localhost:8000/
 ```
 
-No GitHub Pages já fica disponível em `…/app/`. (A raiz do repositório continua
-servindo o convite original, intocado.)
+No GitHub Pages a plataforma é a home (`https://cauatarle5.github.io/convites/`).
+O convite original foi preservado em `/convite/`
+(`https://cauatarle5.github.io/convites/convite/`).
 
 ## Decisões de arquitetura (v1)
 
@@ -102,13 +103,13 @@ o backend e colar a URL:
   limpa o texto colado do edital numa lista pronta para a reconciliação.
 
 Como ligar:
-1. Publique o worker em `../server` (ver `server/README.md`) — Cloudflare Workers,
+1. Publique o worker em `server/` (ver `server/README.md`) — Cloudflare Workers,
    plano gratuito serve. A **chave da API fica só no backend**, nunca no cliente.
 2. No app, **Painel → IA**, cole o endpoint (e o token, se configurou um) e clique
    *Testar conexão*.
 
 Sem o backend, o app permanece 100% funcional no modo manual (checklist de resumo
-e lista de edital colada). Cliente: `src/ia.js`. Backend: `../server/worker.js`
+e lista de edital colada). Cliente: `src/ia.js`. Backend: `server/worker.js`
 (modelo `claude-opus-5`, structured outputs).
 
 Com isso, as quatro fases do roadmap estão cobertas.

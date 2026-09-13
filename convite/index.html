@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Um convite para você</title>
+<meta name="theme-color" content="#efe7d7">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+/* ============================================================
+   PALETA E MEDIDAS  (os TEXTOS ficam no bloco CONFIG, no <script>)
+   ============================================================ */
+:root{
+  --bg:#efe7d7;          /* creme papel */
+  --paper:#e6dcc8;       /* cartões */
+  --ink:#2a2620;         /* texto principal, quase preto quente */
+  --ink-soft:#7a6f60;    /* texto secundário */
+  --ink-faint:#a99a86;   /* legendas, selos */
+  --line:#d7cbb4;        /* linhas finas */
+  --navy:#21486e;        /* azul midnight, o acento */
+  --navy-deep:#16324e;   /* azul profundo */
+  --serif:'Cormorant Garamond', Georgia, serif;
+  --sans:'Jost', system-ui, sans-serif;
+  --ease:cubic-bezier(.22,.61,.24,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:var(--sans);font-weight:300;line-height:1.65;
+  letter-spacing:.015em;overflow-x:hidden;-webkit-font-smoothing:antialiased;
+}
+body.locked{overflow:hidden;height:100vh}
+
+.grain{
+  position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.06'/%3E%3C/svg%3E");
+  mix-blend-mode:multiply;
+}
+
+.stage{position:relative;z-index:1}
+section{
+  min-height:100svh;display:flex;flex-direction:column;justify-content:center;align-items:center;
+  padding:clamp(40px,9vw,96px) clamp(26px,7vw,72px);position:relative;text-align:center;
+}
+.wrap{width:100%;max-width:620px;margin:0 auto;position:relative;z-index:2}
+
+/* ---------- tipografia ---------- */
+.eyebrow{
+  font-family:var(--sans);font-size:clamp(10px,2.8vw,12px);letter-spacing:.5em;
+  text-transform:uppercase;color:var(--navy);font-weight:400;padding-left:.5em;
+}
+.display{font-family:var(--serif);font-weight:300;line-height:1.06;font-size:clamp(40px,11vw,76px);color:var(--ink)}
+.display em{font-style:italic;color:var(--navy)}
+.lead{font-family:var(--serif);font-weight:300;font-size:clamp(23px,6vw,34px);line-height:1.35;color:var(--ink)}
+.lead em{font-style:italic;color:var(--navy)}
+.body{font-size:clamp(14px,3.7vw,16px);color:var(--ink-soft);font-weight:300;line-height:1.85;max-width:42ch;margin:0 auto}
+.name-hero{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(38px,11vw,68px);color:var(--navy);line-height:1.05}
+.hair{width:1px;height:60px;background:linear-gradient(var(--navy),transparent);margin:0 auto;opacity:.5}
+.dot-date{font-family:var(--sans);letter-spacing:.4em;text-transform:uppercase;font-size:clamp(10px,2.8vw,12px);color:var(--ink-faint)}
+
+/* ---------- motivos decorativos (lua, estrelas, taças) ---------- */
+.night{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.night>*{position:absolute;color:var(--navy)}
+.night svg{display:block}
+.twinkle{animation:tw 4.5s ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:.28}50%{opacity:.7}}
+body.reduce .twinkle{animation:none;opacity:.5}
+.ico-cheers{color:var(--navy)}
+.cheers-divider{margin:26px auto 0;opacity:.9}
+.moon-mark{margin:0 auto 10px;color:var(--navy)}
+
+/* reveal */
+.rise{opacity:0;transform:translateY(22px);transition:opacity 1.1s var(--ease),transform 1.2s var(--ease)}
+.rise.in{opacity:1;transform:none}
+.d1{transition-delay:.1s}.d2{transition-delay:.26s}.d3{transition-delay:.42s}
+.d4{transition-delay:.58s}.d5{transition-delay:.74s}.d6{transition-delay:.9s}
+
+/* ============ 1. LOBBY ============ */
+#lobby{
+  position:fixed;inset:0;z-index:500;
+  background:radial-gradient(ellipse at 50% 40%,#f4eede,var(--bg) 74%);
+  display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;
+  padding:0 28px;transition:opacity 1.5s var(--ease),transform 1.5s var(--ease);
+}
+#lobby.gone{opacity:0;transform:scale(1.03);pointer-events:none}
+#lobby>*:not(.night){position:relative;z-index:2}
+.lobby-seal{width:58px;height:58px;border-radius:50%;border:1px solid var(--navy);display:grid;place-items:center;margin-bottom:34px;position:relative}
+.lobby-seal::before{content:"";position:absolute;inset:-8px;border-radius:50%;border:1px solid rgba(33,72,110,.2);animation:ring 5s var(--ease) infinite}
+@keyframes ring{0%{transform:scale(1);opacity:.5}70%{transform:scale(1.3);opacity:0}100%{opacity:0}}
+.lobby-seal span{font-family:var(--serif);font-style:italic;color:var(--navy);font-size:22px}
+.enter-btn{margin-top:50px;background:transparent;border:1px solid var(--navy);color:var(--navy);font-family:var(--sans);font-size:12px;letter-spacing:.36em;text-transform:uppercase;font-weight:400;padding:16px 46px;border-radius:2px;cursor:pointer;transition:.55s var(--ease);position:relative;overflow:hidden}
+.enter-btn span{position:relative;z-index:1;transition:color .55s var(--ease)}
+.enter-btn::after{content:"";position:absolute;inset:0;background:var(--navy);transform:translateY(101%);transition:transform .55s var(--ease)}
+.enter-btn:hover::after{transform:translateY(0)}
+.enter-btn:hover span{color:var(--bg)}
+.enter-hint{margin-top:22px;font-size:10px;letter-spacing:.34em;text-transform:uppercase;color:var(--ink-faint)}
+.lo{opacity:0;transform:translateY(18px);animation:loIn 1.3s var(--ease) forwards}
+.lo1{animation-delay:.3s}.lo2{animation-delay:.75s}.lo3{animation-delay:1.15s}
+.lo4{animation-delay:1.55s}.lo5{animation-delay:2s}.lo6{animation-delay:2.5s}
+@keyframes loIn{to{opacity:1;transform:none}}
+
+/* ============ 2. CONVITE ============ */
+.scroll-cue{position:absolute;bottom:34px;left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:.36em;text-transform:uppercase;color:var(--ink-faint);display:flex;flex-direction:column;align-items:center;gap:12px;z-index:2}
+.scroll-cue i{display:block;width:1px;height:38px;background:linear-gradient(var(--navy),transparent);animation:cue 2.6s var(--ease) infinite}
+@keyframes cue{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+
+/* ============ 3. MENU ============ */
+.course-label{font-family:var(--sans);font-size:11px;letter-spacing:.46em;text-transform:uppercase;color:var(--navy);margin:52px 0 26px;position:relative;display:inline-block;padding-left:.46em}
+.course-label::before,.course-label::after{content:"";position:absolute;top:50%;width:30px;height:1px;background:var(--line)}
+.course-label::before{right:calc(100% + 18px)}
+.course-label::after{left:calc(100% + 18px)}
+.dish{margin:0 auto 26px;max-width:440px}
+.dish h3{font-family:var(--serif);font-weight:500;font-size:clamp(23px,6vw,30px);color:var(--ink);line-height:1.2;margin-bottom:6px}
+.dish p{font-size:13px;color:var(--ink-soft);line-height:1.7;max-width:38ch;margin:0 auto;letter-spacing:.02em}
+.menu-note{font-family:var(--serif);font-style:italic;font-size:clamp(20px,5.4vw,26px);color:var(--navy);line-height:1.45;margin-bottom:0;max-width:24ch;margin-left:auto;margin-right:auto}
+
+/* ============ 4. TRILHA ============ */
+.wave{display:flex;align-items:flex-end;justify-content:center;gap:5px;height:44px;margin:0 auto 36px}
+.wave i{width:3px;background:var(--navy);border-radius:2px;opacity:.85;animation:eq 1.7s var(--ease) infinite}
+.wave i:nth-child(1){height:40%;animation-delay:0s}.wave i:nth-child(2){height:75%;animation-delay:.15s}
+.wave i:nth-child(3){height:100%;animation-delay:.3s}.wave i:nth-child(4){height:55%;animation-delay:.45s}
+.wave i:nth-child(5){height:85%;animation-delay:.6s}.wave i:nth-child(6){height:35%;animation-delay:.75s}
+.wave i:nth-child(7){height:65%;animation-delay:.9s}
+@keyframes eq{0%,100%{transform:scaleY(.5)}50%{transform:scaleY(1)}}
+body.reduce .wave i{animation:none}
+.play-btn{display:inline-flex;align-items:center;gap:12px;background:var(--navy);color:var(--bg);font-family:var(--sans);font-weight:400;font-size:12px;letter-spacing:.24em;text-transform:uppercase;padding:16px 34px;border-radius:2px;text-decoration:none;cursor:pointer;border:none;transition:.45s var(--ease)}
+.play-btn:hover{background:var(--navy-deep);transform:translateY(-2px)}
+.play-btn svg{width:14px;height:14px;fill:var(--bg)}
+.play-btn.disabled{background:var(--line);color:var(--ink-faint);cursor:not-allowed;pointer-events:none}
+.play-btn.disabled svg{fill:var(--ink-faint)}
+.qr-wrap{margin-top:36px}
+.qr-box{width:158px;height:158px;margin:0 auto;background:#f6f0e4;border:1px solid var(--line);border-radius:4px;padding:12px;display:grid;place-items:center}
+.qr-box img,.qr-box canvas{width:100%!important;height:100%!important}
+.qr-empty{font-size:11px;color:var(--ink-faint);text-align:center;padding:0 10px;line-height:1.5}
+.qr-cap{font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:var(--ink-faint);margin-top:16px}
+.add-hint{margin-top:26px;font-size:12px;color:var(--ink-soft);line-height:1.6;display:flex;align-items:center;gap:9px;justify-content:center;letter-spacing:.02em}
+.add-hint svg{width:14px;height:14px;stroke:var(--navy);fill:none;stroke-width:1.6}
+
+/* ============ 5. PRESENTE / VALE ============ */
+.envelope{max-width:410px;margin:40px auto 0;cursor:pointer;position:relative}
+.env-hint{font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:var(--ink-faint);margin-top:22px;transition:opacity .5s}
+.envelope.open .env-hint{opacity:0}
+.ticket{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:40px 30px 34px;overflow:hidden;opacity:0;transform:translateY(26px) scale(.97);transition:opacity 1s var(--ease) .1s,transform 1s var(--ease) .1s}
+.envelope.open .ticket{opacity:1;transform:none}
+.ticket::before,.ticket::after{content:"";position:absolute;top:50%;width:24px;height:24px;border-radius:50%;background:var(--bg);transform:translateY(-50%)}
+.ticket::before{left:-13px}.ticket::after{right:-13px}
+.ticket-corner{position:absolute;color:var(--navy);opacity:.5}
+.ticket-corner.tl{top:14px;left:16px}
+.ticket-corner.tr{top:20px;right:18px}
+.ticket-corner.bl{bottom:18px;left:20px}
+.ticket-corner.br{bottom:16px;right:16px}
+.ticket-perf{border-top:1px dashed var(--line);margin:24px 0;position:relative}
+.ticket-eyebrow{font-size:10px;letter-spacing:.42em;text-transform:uppercase;color:var(--navy);margin-bottom:16px}
+.ticket-title{font-family:var(--serif);font-weight:400;font-size:clamp(30px,8vw,42px);color:var(--ink);line-height:1.05}
+.ticket-title em{font-style:italic;color:var(--navy)}
+.ticket-sub{font-family:var(--serif);font-style:italic;font-size:16px;color:var(--ink-soft);margin-top:12px;line-height:1.5}
+.ticket-num{font-size:9px;letter-spacing:.34em;text-transform:uppercase;color:var(--ink-faint);margin-top:22px}
+.redeem{margin-top:22px;background:transparent;border:1px solid var(--navy);color:var(--navy);font-family:var(--sans);font-size:11px;letter-spacing:.3em;text-transform:uppercase;font-weight:400;padding:13px 36px;border-radius:2px;cursor:pointer;transition:.45s var(--ease)}
+.redeem:hover{background:var(--navy);color:var(--bg)}
+.redeem.done{border-color:var(--line);color:var(--ink-faint);pointer-events:none;background:transparent}
+.redeem-msg{font-family:var(--serif);font-style:italic;font-size:17px;color:var(--navy);margin-top:20px;opacity:0;transform:translateY(8px);transition:.7s var(--ease);line-height:1.5}
+.redeem-msg.show{opacity:1;transform:none}
+.wax{width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 38% 34%,#3a6390,var(--navy),var(--navy-deep));display:grid;place-items:center;margin:0 auto 10px;box-shadow:0 4px 12px rgba(22,50,78,.3)}
+.wax span{font-family:var(--serif);font-style:italic;color:#e9f0f7;font-size:16px}
+
+/* ============ 6. FINAL ============ */
+.confirm-btn{margin-top:44px;background:var(--navy);color:var(--bg);border:none;font-family:var(--sans);font-weight:400;font-size:12px;letter-spacing:.3em;text-transform:uppercase;padding:17px 48px;border-radius:2px;cursor:pointer;transition:.5s var(--ease)}
+.confirm-btn:hover{background:var(--navy-deep);transform:translateY(-2px)}
+.confirm-state{margin-top:8px;opacity:0;transform:translateY(14px);transition:opacity 1.1s var(--ease),transform 1.1s var(--ease);pointer-events:none}
+.confirm-state.show{opacity:1;transform:none}
+.confirm-title{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(30px,8vw,48px);color:var(--navy);line-height:1.15}
+.confirm-sub{font-size:11px;letter-spacing:.38em;text-transform:uppercase;color:var(--ink-faint);margin-top:20px}
+.check{width:58px;height:58px;border-radius:50%;border:1px solid var(--navy);display:grid;place-items:center;margin:0 auto 30px}
+.check svg{width:24px;height:24px;stroke:var(--navy);fill:none;stroke-width:1.3;stroke-dasharray:40;stroke-dashoffset:40}
+.confirm-state.show .check svg{animation:draw 1s var(--ease) .3s forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+
+/* assinatura */
+.signature{padding:56px 0 64px;text-align:center;position:relative}
+.signature .seal{font-family:var(--serif);font-style:italic;font-size:16px;color:var(--ink-faint);letter-spacing:.05em}
+.signature .seal b{color:var(--navy);font-weight:400}
+.signature .seal small{display:block;font-family:var(--sans);font-style:normal;font-size:9px;letter-spacing:.4em;margin-top:9px;color:var(--ink-faint)}
+
+/* brilhos */
+.spark{position:fixed;inset:0;pointer-events:none;z-index:400;overflow:hidden}
+.spark i{position:absolute;top:-8px;width:5px;height:5px;border-radius:50%;background:var(--navy);opacity:0}
+
+/* progresso */
+.progress{position:fixed;right:18px;top:50%;transform:translateY(-50%);z-index:300;display:flex;flex-direction:column;gap:13px;opacity:0;transition:opacity .6s}
+.progress.show{opacity:1}
+.progress a{width:6px;height:6px;border-radius:50%;background:var(--line);transition:.4s var(--ease);display:block}
+.progress a.active{background:var(--navy);transform:scale(1.35)}
+@media (max-width:560px){.progress{right:11px;gap:11px}.progress a{width:5px;height:5px}}
+
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.2s!important}.rise{opacity:1;transform:none}}
+</style>
+</head>
+<body class="locked">
+<div class="grain"></div>
+<div class="spark" id="spark"></div>
+
+<nav class="progress" id="progress" aria-hidden="true">
+  <a href="#convite" data-t="convite"></a>
+  <a href="#menu" data-t="menu"></a>
+  <a href="#trilha" data-t="trilha"></a>
+  <a href="#presente" data-t="presente"></a>
+  <a href="#final" data-t="final"></a>
+</nav>
+
+<!-- 1. LOBBY -->
+<div id="lobby">
+  <div class="night" id="lobbyNight"></div>
+  <div class="lobby-seal lo lo1"><span id="lobbySeal">C</span></div>
+  <p class="eyebrow lo lo2" id="lobbyEyebrow">Um convite</p>
+  <div style="height:26px"></div>
+  <h1 class="name-hero lo lo3" id="lobbyName">Maria Cecília</h1>
+  <div style="height:30px"></div>
+  <div class="hair lo lo4"></div>
+  <div style="height:28px"></div>
+  <p class="lead lo lo4" id="lobbyLine" style="max-width:22ch">Reservei uma noite para nós.</p>
+  <p class="dot-date lo lo5" id="lobbyDate" style="margin-top:26px">Sexta · 14 de agosto</p>
+  <button class="enter-btn lo lo6" id="enterBtn"><span>Entrar</span></button>
+  <p class="enter-hint lo lo6" id="enterHint">com som, de preferência</p>
+</div>
+
+<main class="stage" id="stage">
+
+  <!-- 2. CONVITE -->
+  <section id="convite">
+    <div class="night" id="conviteNight"></div>
+    <div class="wrap">
+      <p class="eyebrow rise" data-reveal>O convite</p>
+      <div style="height:34px"></div>
+      <h2 class="display rise d1" data-reveal id="cvLine1">Nossas noites merecem ser lembradas.</h2>
+      <div style="height:30px"></div>
+      <p class="lead rise d3" data-reveal id="cvLine2">Sexta-feira. Você e eu. <em>Nós.</em></p>
+      <div style="height:34px"></div>
+      <div class="hair rise d3" data-reveal></div>
+      <div style="height:28px"></div>
+      <p class="body rise d4" data-reveal id="cvBody">Nos detalhes que você vai descobrir, nas músicas que vão tocar e nos pequenos momentos que quero guardar com você.</p>
+    </div>
+    <div class="scroll-cue rise d6" data-reveal>Continue<i></i></div>
+  </section>
+
+  <!-- 3. MENU -->
+  <section id="menu">
+    <div class="wrap">
+      <p class="eyebrow rise" data-reveal>O menu</p>
+      <div style="height:32px"></div>
+      <p class="menu-note rise d1" data-reveal id="menuNote">Não é só um jantar. É o meu jeito de cuidar de você.</p>
+      <div class="cheers-divider rise d2" data-reveal id="cheersDivider"></div>
+      <div id="courses"><!-- injetado via JS --></div>
+    </div>
+  </section>
+
+  <!-- 4. TRILHA -->
+  <section id="trilha">
+    <div class="wrap">
+      <p class="eyebrow rise" data-reveal>A trilha da noite</p>
+      <div style="height:34px"></div>
+      <p class="lead rise d1" data-reveal id="trilhaText" style="max-width:28ch">Viver sozinho é bom. Mas construir uma vida com você é incrível.</p>
+      <div style="height:44px"></div>
+      <div class="wave rise d2" data-reveal><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <a class="play-btn rise d2" data-reveal id="playBtn" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><span id="playLabel">Abrir a playlist</span>
+      </a>
+      <div class="qr-wrap rise d3" data-reveal>
+        <div class="qr-box" id="qrBox"><div class="qr-empty">O código aparece aqui quando o link da playlist for adicionado.</div></div>
+        <p class="qr-cap">Aponte a câmera</p>
+      </div>
+      <div class="add-hint rise d4" data-reveal>
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span id="addHint">Adicione as músicas que você quiser</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. PRESENTE -->
+  <section id="presente">
+    <div class="night" id="presenteNight"></div>
+    <div class="wrap">
+      <p class="eyebrow rise" data-reveal>Um presente</p>
+      <div style="height:26px"></div>
+      <p class="body rise d1" data-reveal id="presenteIntro" style="max-width:28ch">Escondi uma última coisa aqui dentro. Toque para abrir.</p>
+      <div class="envelope rise d2" data-reveal id="envelope" role="button" tabindex="0" aria-label="Abrir o presente">
+        <div class="ticket" id="ticket">
+          <div class="wax"><span id="ticketSeal">C</span></div>
+          <p class="ticket-eyebrow">Vale-presente</p>
+          <h3 class="ticket-title">Uma <em>massagem</em></h3>
+          <p class="ticket-sub" id="ticketSub">Válido para uma massagem. Sem pressa, sem hora pra acabar.</p>
+          <div class="ticket-perf"></div>
+          <p class="ticket-num" id="ticketNum">Nº 001 · sem validade</p>
+          <button class="redeem" id="redeemBtn">Resgatar</button>
+          <p class="redeem-msg" id="redeemMsg">Feito. Esse momento agora é seu, quando você quiser.</p>
+        </div>
+        <p class="env-hint">toque no cartão</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. FINAL -->
+  <section id="final">
+    <div class="night" id="finalNight"></div>
+    <div class="wrap">
+      <div id="finalPre">
+        <p class="eyebrow rise" data-reveal id="finalEyebrow">Sexta-feira</p>
+        <div style="height:22px"></div>
+        <div class="moon-mark rise d1" data-reveal id="finalMoon"></div>
+        <h2 class="display rise d1" data-reveal id="finalLine">Feito por mim, pensando em você, com um só motivo: <em>Nós.</em></h2>
+        <div style="height:24px"></div>
+        <p class="name-hero rise d2" data-reveal id="finalName" style="font-size:clamp(28px,7vw,44px)">Maria Cecília</p>
+        <button class="confirm-btn rise d3" data-reveal id="confirmBtn">Confirmar presença</button>
+      </div>
+      <div class="confirm-state" id="confirmState">
+        <div class="check"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
+        <p class="confirm-title" id="confirmTitle">Presença confirmada. Te espero.</p>
+        <p class="confirm-sub" id="confirmSub">Sexta · 14 de agosto de 2026</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="signature">
+    <p class="seal"><b id="sigInitials">C &amp; M</b><small id="sigDate">14 . 08 . 2026</small></p>
+  </footer>
+</main>
+
+<script>
+/* ================================================================
+   ▓▓▓  ÁREA DE CONFIGURAÇÃO — MEXA SÓ AQUI  ▓▓▓
+   ================================================================ */
+const CONFIG = {
+  nome: "Maria Cecília",
+  dataCurta: "Sexta · 14 de agosto",
+  dataCompleta: "Sexta · 14 de agosto de 2026",
+  iniciais: "C & M",
+  inicialSelo: "C",
+  dataSelo: "14 . 08 . 2026",
+
+  lobby: {
+    eyebrow: "Um convite",
+    frase: "Reservei uma noite para nós.",
+    botao: "Entrar",
+    dica: "com som, de preferência",
+  },
+
+  convite: {
+    linha1: "Nossas noites merecem ser lembradas.",
+    linha2: "Sexta-feira. Você e eu. <em>Nós.</em>",   // <em>..</em> = azul itálico
+    apoio: "Nos detalhes que você vai descobrir, nas músicas que vão tocar e nos pequenos momentos que quero guardar com você.",
+  },
+
+  menu: {
+    frase: "Não é só um jantar. É o meu jeito de cuidar de você.",
+    cursos: [
+      {
+        titulo: "Entrada",
+        pratos: [
+          { nome:"Cream cheese, salame e limão", desc:"Cream cheese temperado, salame italiano, raspas de limão-siciliano, azeite e pimenta-do-reino." },
+          { nome:"Tomatinho confitado", desc:"Tomate-cereja assado lentamente no azeite com alho, ervas e manjericão fresco." },
+          { nome:"Pão tostado", desc:"Fatias finas de pão italiano, azeite, ao forno." },
+        ]
+      },
+      {
+        titulo: "Principal",
+        pratos: [
+          { nome:"Bife ancho", desc:"Selado, no ponto que você gosta." },   // <-- edite o preparo
+          { nome:"Nhoque de mandioquinha", desc:"Molho de parmesão, azeite de ervas, pangrattato e tuile." },
+        ]
+      },
+      {
+        titulo: "Sobremesa",
+        pratos: [
+          { nome:"Brookie, caramelo salgado e sorvete", desc:"Brownie e cookie no mesmo ponto, calda de caramelo salgado e sorvete de creme." },
+        ]
+      },
+    ]
+  },
+
+  trilha: {
+    texto: "Viver sozinho é bom. Mas construir uma vida com você é incrível. Por isso peço ajuda para construir a trilha sonora que acompanhará a nossa noite.",
+    playlist: "https://open.spotify.com/playlist/6EbPM09VpkrpekZgDllGIJ?si=g1KC9aN-RvW5UD4G2rW-iw",
+    botao: "Abrir a playlist",
+    addHint: "Adicione as músicas que você quiser",
+  },
+
+  presente: {
+    intro: "Escondi uma última coisa aqui dentro. Toque para abrir.",
+    tituloTicket: "Uma <em>massagem</em>",
+    subTicket: "Válido para uma massagem. Sem pressa, sem hora pra acabar.",
+    numero: "Nº 001 · sem validade",
+    botao: "Resgatar",
+    confirmacao: "Feito. Esse momento agora é seu, quando você quiser.",
+  },
+
+  final: {
+    eyebrow: "Sexta-feira",
+    frase: "Feito por mim, pensando em você, com um só motivo: <em>Nós.</em>",
+    botao: "Confirmar presença",
+    confirmTitulo: "Presença confirmada. Te espero.",
+    confirmSub: "Sexta · 14 de agosto de 2026",
+  },
+};
+/* ================================================================
+   ▓▓▓  FIM DA CONFIGURAÇÃO  ▓▓▓
+   ================================================================ */
+
+/* ---- ícones decorativos (SVG) ---- */
+const ICO = {
+  moon:(s=22)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1"><path d="M21 13.2A8.5 8.5 0 1 1 10.8 3a6.6 6.6 0 0 0 10.2 10.2Z"/></svg>`,
+  star:(s=14)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5c.8 5.4 4.3 8.9 9.8 9.8-5.5.9-9 4.4-9.8 9.8-.8-5.4-4.3-8.9-9.8-9.8 5.5-.9 9-4.4 9.8-9.8Z"/></svg>`,
+  star5:(s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.6 6 6.5.5-5 4.3 1.6 6.4L12 16.9 6.3 20.2l1.6-6.4-5-4.3 6.5-.5z"/></svg>`,
+  cheers:(s=58)=>`<svg width="${s}" height="${Math.round(s*0.66)}" viewBox="0 0 72 48" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+    <g transform="rotate(-14 33 8)"><path d="M27 6h12c0 8-2.6 11.5-6 11.5S27 14 27 6Z"/><path d="M33 17.5V38"/><path d="M27 40h12"/></g>
+    <g transform="rotate(14 39 8)"><path d="M33 6h12c0 8-2.6 11.5-6 11.5S33 14 33 6Z"/><path d="M39 17.5V38"/><path d="M33 40h12"/></g>
+  </svg>`,
+};
+
+const $ = s => document.querySelector(s);
+function set(sel,val,html=false){const el=$(sel);if(!el)return;html?el.innerHTML=val:el.textContent=val;}
+
+set('#lobbySeal',CONFIG.inicialSelo);
+set('#lobbyEyebrow',CONFIG.lobby.eyebrow);
+set('#lobbyName',CONFIG.nome);
+set('#lobbyLine',CONFIG.lobby.frase);
+set('#lobbyDate',CONFIG.dataCurta);
+$('#enterBtn').querySelector('span').textContent=CONFIG.lobby.botao;
+set('#enterHint',CONFIG.lobby.dica);
+set('#cvLine1',CONFIG.convite.linha1);
+set('#cvLine2',CONFIG.convite.linha2,true);
+set('#cvBody',CONFIG.convite.apoio);
+set('#menuNote',CONFIG.menu.frase);
+set('#cheersDivider',ICO.cheers(54),true);
+set('#trilhaText',CONFIG.trilha.texto);
+set('#playLabel',CONFIG.trilha.botao);
+set('#addHint',CONFIG.trilha.addHint);
+set('#presenteIntro',CONFIG.presente.intro);
+set('#ticketSeal',CONFIG.inicialSelo);
+$('#presente .ticket-title').innerHTML=CONFIG.presente.tituloTicket;
+set('#ticketSub',CONFIG.presente.subTicket);
+set('#ticketNum',CONFIG.presente.numero);
+set('#redeemBtn',CONFIG.presente.botao);
+set('#redeemMsg',CONFIG.presente.confirmacao);
+set('#finalEyebrow',CONFIG.final.eyebrow);
+set('#finalMoon',ICO.moon(30),true);
+set('#finalLine',CONFIG.final.frase,true);
+set('#finalName',CONFIG.nome);
+set('#confirmBtn',CONFIG.final.botao);
+set('#confirmTitle',CONFIG.final.confirmTitulo);
+set('#confirmSub',CONFIG.final.confirmSub);
+set('#sigInitials',CONFIG.iniciais);
+set('#sigDate',CONFIG.dataSelo);
+
+/* céu decorativo: espalha lua + estrelas numa camada */
+function scatter(el, items){
+  if(!el)return;
+  el.innerHTML = items.map(it=>{
+    const ico = it.type==='moon'?ICO.moon(it.s||26):(it.type==='star5'?ICO.star5(it.s||13):ICO.star(it.s||12));
+    return `<span class="${it.tw!==false?'twinkle':''}" style="top:${it.top};left:${it.left};opacity:${it.o||.4};animation-delay:${(Math.random()*3).toFixed(1)}s">${ico}</span>`;
+  }).join('');
+}
+scatter($('#lobbyNight'),[
+  {type:'moon',top:'12%',left:'78%',s:30,o:.55,tw:false},
+  {type:'star',top:'18%',left:'16%',s:15,o:.5},
+  {type:'star5',top:'30%',left:'86%',s:12,o:.4},
+  {type:'star',top:'70%',left:'10%',s:11,o:.35},
+  {type:'star5',top:'80%',left:'82%',s:14,o:.45},
+  {type:'star',top:'60%',left:'90%',s:9,o:.3},
+]);
+scatter($('#conviteNight'),[
+  {type:'star',top:'14%',left:'86%',s:12,o:.4},
+  {type:'star5',top:'82%',left:'12%',s:12,o:.35},
+]);
+scatter($('#presenteNight'),[
+  {type:'star',top:'16%',left:'12%',s:12,o:.35},
+  {type:'star5',top:'22%',left:'84%',s:13,o:.4},
+  {type:'moon',top:'74%',left:'84%',s:24,o:.4,tw:false},
+]);
+scatter($('#finalNight'),[
+  {type:'star5',top:'16%',left:'16%',s:14,o:.45},
+  {type:'star',top:'24%',left:'82%',s:12,o:.4},
+  {type:'star',top:'70%',left:'12%',s:11,o:.35},
+  {type:'star5',top:'78%',left:'86%',s:13,o:.4},
+  {type:'star',top:'12%',left:'50%',s:9,o:.3},
+]);
+
+/* decoração do ticket (estrelas nos cantos) */
+(function decorTicket(){
+  const t=$('#ticket');if(!t)return;
+  const corners=[['tl','star',12],['tr','star5',13],['bl','star5',12],['br','star',11]];
+  corners.forEach(([pos,tp,s])=>{
+    const span=document.createElement('span');
+    span.className='ticket-corner '+pos;
+    span.innerHTML = tp==='star5'?ICO.star5(s):ICO.star(s);
+    t.appendChild(span);
+  });
+})();
+
+/* monta o menu (entrada, principal, sobremesa) */
+(function buildMenu(){
+  const box=$('#courses');
+  const courseLabel=(txt)=>{const p=document.createElement('p');p.className='course-label rise';p.setAttribute('data-reveal','');p.textContent=txt;return p;};
+  CONFIG.menu.cursos.forEach(curso=>{
+    box.appendChild(courseLabel(curso.titulo));
+    curso.pratos.forEach((p,i)=>{
+      const d=document.createElement('div');d.className='dish rise d'+Math.min(i+1,3);d.setAttribute('data-reveal','');
+      d.innerHTML=`<h3>${p.nome}</h3>${p.desc?`<p>${p.desc}</p>`:''}`;
+      box.appendChild(d);
+    });
+  });
+})();
+
+/* trilha: link + QR */
+(function trilha(){
+  const link=(CONFIG.trilha.playlist||"").trim();
+  const btn=$('#playBtn'),qrBox=$('#qrBox');
+  if(link){
+    btn.href=link;btn.classList.remove('disabled');qrBox.innerHTML='';
+    try{ new QRCode(qrBox,{text:link,width:134,height:134,colorDark:'#16324e',colorLight:'#f6f0e4',correctLevel:QRCode.CorrectLevel.M}); }
+    catch(e){ qrBox.innerHTML='<div class="qr-empty">Não foi possível gerar o QR.</div>'; }
+  }else{
+    btn.classList.add('disabled');btn.href='#';btn.addEventListener('click',e=>e.preventDefault());
+  }
+})();
+
+/* lobby -> entrar */
+$('#enterBtn').addEventListener('click',()=>{
+  const lobby=$('#lobby');lobby.classList.add('gone');
+  document.body.classList.remove('locked');
+  setTimeout(()=>{lobby.style.display='none';$('#progress').classList.add('show');},1500);
+  setTimeout(()=>{document.querySelectorAll('#convite [data-reveal]').forEach(el=>el.classList.add('in'));},250);
+  window.scrollTo(0,0);
+});
+
+/* reveal on scroll */
+const io=new IntersectionObserver((entries)=>{
+  entries.forEach(en=>{if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}});
+},{threshold:.16,rootMargin:'0px 0px -8% 0px'});
+document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
+
+/* progresso */
+const dots=[...document.querySelectorAll('.progress a')];
+const secs=['convite','menu','trilha','presente','final'].map(id=>document.getElementById(id));
+const spy=new IntersectionObserver((entries)=>{
+  entries.forEach(en=>{if(en.isIntersecting){const t=en.target.id;dots.forEach(d=>d.classList.toggle('active',d.dataset.t===t));}});
+},{threshold:.5});
+secs.forEach(s=>spy.observe(s));
+dots.forEach(d=>d.addEventListener('click',e=>{e.preventDefault();document.getElementById(d.dataset.t).scrollIntoView({behavior:'smooth'});}));
+
+/* envelope */
+const env=$('#envelope');
+function openEnv(){env.classList.add('open');}
+env.addEventListener('click',(e)=>{if(e.target.id!=='redeemBtn')openEnv();});
+env.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openEnv();}});
+$('#redeemBtn').addEventListener('click',(e)=>{
+  e.stopPropagation();const b=$('#redeemBtn');
+  b.classList.add('done');b.textContent='Resgatado';
+  $('#redeemMsg').classList.add('show');softSpark(10);
+});
+
+/* confirmação final */
+$('#confirmBtn').addEventListener('click',()=>{
+  const pre=$('#finalPre');
+  pre.style.transition='opacity .7s ease, transform .7s ease';
+  pre.style.opacity='0';pre.style.transform='translateY(-12px)';pre.style.pointerEvents='none';
+  setTimeout(()=>{pre.style.display='none';$('#confirmState').classList.add('show');},600);
+  softSpark(30);
+});
+
+/* brilhos */
+function softSpark(n){
+  if(document.body.classList.contains('reduce'))return;
+  const box=$('#spark');
+  for(let i=0;i<n;i++){
+    const s=document.createElement('i');
+    s.style.left=(50+(Math.random()-.5)*46)+'vw';
+    const size=3+Math.random()*3;s.style.width=s.style.height=size+'px';
+    s.style.opacity=.5+Math.random()*.4;
+    const d=2.4+Math.random()*1.4,delay=Math.random()*.5;
+    s.animate([
+      {transform:'translateY(-8px) scale(1)',opacity:0},
+      {opacity:.7,offset:.12},
+      {transform:`translateY(${64+Math.random()*28}vh) translateX(${(Math.random()-.5)*70}px) scale(.4)`,opacity:0}
+    ],{duration:d*1000,delay:delay*1000,easing:'cubic-bezier(.4,.1,.5,1)'});
+    box.appendChild(s);setTimeout(()=>s.remove(),(d+delay)*1000+200);
+  }
+}
+
+if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){document.body.classList.add('reduce');}
+</script>
+</body>
+</html>
