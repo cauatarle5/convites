@@ -89,11 +89,26 @@ Da **Fase 4**, já entram (sem depender de chave de API):
   histórico); itens do edital não previstos viram disciplinas novas; a data da
   prova e o tempo restante são recalculados.
 
-## Roadmap (o que ainda depende de IA server-side)
+## Camada de IA (Fases 3 e 4) — código pronto, precisa de backend + chave
 
-- **Correção de resumo por IA semântica item a item** (restante da Fase 3) — hoje
-  é checklist manual; *de propósito não fazemos keyword-matching disfarçado de IA*.
-- **Extração automática do PDF do edital por IA** (passo 2 da seção 18) — hoje a
-  lista do edital é colada/curada e a sugestão de match é por similaridade textual.
+A integração de IA está **implementada de ponta a ponta**; só falta você publicar
+o backend e colar a URL:
 
-Ambos exigem uma chave de API server-side; o resto das 4 fases está implementado.
+- **Correção de resumo por IA semântica item a item** (Fase 3) — botão *Corrigir
+  com IA* na recuperação ativa. O backend compara o resumo contra cada ponto-chave
+  (coberto / parcialmente / não coberto + justificativa). *De propósito não fazemos
+  keyword-matching disfarçado de IA* — é comparação semântica de verdade.
+- **Extração do edital por IA** (Fase 4) — botão *Extrair com IA* na migração, que
+  limpa o texto colado do edital numa lista pronta para a reconciliação.
+
+Como ligar:
+1. Publique o worker em `../server` (ver `server/README.md`) — Cloudflare Workers,
+   plano gratuito serve. A **chave da API fica só no backend**, nunca no cliente.
+2. No app, **Painel → IA**, cole o endpoint (e o token, se configurou um) e clique
+   *Testar conexão*.
+
+Sem o backend, o app permanece 100% funcional no modo manual (checklist de resumo
+e lista de edital colada). Cliente: `src/ia.js`. Backend: `../server/worker.js`
+(modelo `claude-opus-5`, structured outputs).
+
+Com isso, as quatro fases do roadmap estão cobertas.

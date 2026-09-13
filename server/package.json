@@ -1,0 +1,17 @@
+{
+  "name": "prep-anpd-ia-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Backend de IA (Cloudflare Worker) da plataforma Prep ANPD — correção de resumo e extração de edital.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.70.1"
+  },
+  "devDependencies": {
+    "wrangler": "^3.90.0"
+  }
+}

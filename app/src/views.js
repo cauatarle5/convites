@@ -17,6 +17,7 @@ import {
 } from './ui.js';
 import { gerarCaderno } from './caderno.js';
 import { sugerirMatches, aplicarMigracao } from './migracao.js';
+import { iaDisponivel, corrigirResumo, extrairEdital, testarIA } from './ia.js';
 
 let refresh = () => {};
 export function setRefresh(fn) { refresh = fn; }
@@ -198,8 +199,10 @@ function abrirRecuperacaoAtiva(topicoId) {
     <div class="dim" style="font-size:13px">${esc(topico ? topico.nome : '')}</div>
     <label class="field"><span class="lab">Escreva um resumo SEM consultar o material</span>
       <textarea id="ra-texto" placeholder="Do que você lembra sobre este tópico?"></textarea></label>
-    ${temChecklist ? `<h3>Marque quais pontos-chave você cobriu</h3>` : ''}
-    <div>${checklistHtml}</div>
+    ${temChecklist ? `<div class="row"><h3 style="flex:1">Marque quais pontos-chave você cobriu</h3>
+      ${iaDisponivel() ? `<button class="btn sm" id="ra-ia">✨ Corrigir com IA</button>` : ''}</div>` : ''}
+    <div id="ra-checklist">${checklistHtml}</div>
+    <div id="ra-ia-fb"></div>
     <hr class="sep">
     <h3>Como foi puxar isso da memória?</h3>
     <div class="grade-btns">
@@ -209,6 +212,28 @@ function abrirRecuperacaoAtiva(topicoId) {
     </div>
     <small class="hint">Isto realimenta o algoritmo de repetição do tópico.</small>
   `, { title: '🧠 Recuperação ativa' });
+
+  // Correção semântica por IA (Fase 3): preenche os selects e mostra justificativas.
+  const btnIA = body.querySelector('#ra-ia');
+  if (btnIA) btnIA.onclick = async () => {
+    const texto = body.querySelector('#ra-texto').value.trim();
+    if (!texto) return toast('Escreva o resumo antes de corrigir');
+    btnIA.disabled = true; btnIA.textContent = '✨ Corrigindo...';
+    try {
+      const r = await corrigirResumo({ topico: topico.nome, pontos_chave: topico.pontos_chave, resumo: texto });
+      const mapStatus = { coberto: 'coberto', parcialmente: 'parcial', nao_coberto: 'nao' };
+      (r.itens || []).forEach((it, i) => {
+        const sel = body.querySelector(`[data-ck="${i}"]`);
+        if (sel && mapStatus[it.status]) sel.value = mapStatus[it.status];
+      });
+      body.querySelector('#ra-ia-fb').innerHTML =
+        `<div class="alert info" style="font-size:12.5px"><b>Correção da IA</b> (explicação didática, revise):<br>` +
+        (r.itens || []).map(it => `• <b>${esc(it.ponto)}</b>: ${esc(it.status)} — ${esc(it.justificativa)}`).join('<br>') +
+        `</div>`;
+    } catch (e) {
+      body.querySelector('#ra-ia-fb').innerHTML = `<div class="alert danger" style="font-size:12.5px">Falha na IA: ${esc(e.message)}</div>`;
+    } finally { btnIA.disabled = false; btnIA.textContent = '✨ Corrigir com IA'; }
+  };
 
   body.querySelectorAll('[data-grade]').forEach(b => {
     b.onclick = () => {
@@ -795,6 +820,22 @@ function viewPainel() {
       <button class="btn primary" id="cfg-save">Salvar configurações</button>
     </div>
 
+    <h2>IA (tutor)</h2>
+    <div class="card">
+      <p class="subtle" style="margin:0 0 10px;font-size:13px">Opcional. Ligue o backend de IA (ver <code>server/</code>)
+        para habilitar a <b>correção semântica de resumo</b> e a <b>extração do edital</b>. A chave da API fica no
+        backend, nunca aqui. Sem isto, o app funciona no modo manual.</p>
+      <label class="field"><span class="lab">Endpoint do backend</span>
+        <input id="cfg-ia-endpoint" value="${esc(cfg.ia_endpoint || '')}" placeholder="https://prep-anpd-ia.<sub>.workers.dev"></label>
+      <label class="field"><span class="lab">Token (se você configurou APP_TOKEN)</span>
+        <input id="cfg-ia-token" value="${esc(cfg.ia_token || '')}" placeholder="opcional"></label>
+      <div class="row" style="gap:8px">
+        <button class="btn primary" id="cfg-ia-save">Salvar IA</button>
+        <button class="btn" id="cfg-ia-test">Testar conexão</button>
+      </div>
+      <div id="cfg-ia-fb"></div>
+    </div>
+
     <h2>Data da prova</h2>
     <div class="card">
       <label class="field"><span class="lab">Data da prova (quando o edital sair)</span>
@@ -838,6 +879,28 @@ function wirePainel() {
       prioridade_amortecimento: root().querySelector('#cfg-amort').checked,
     });
     toast('Configurações salvas'); refresh();
+  };
+  root().querySelector('#cfg-ia-save').onclick = () => {
+    setConfig({
+      ia_endpoint: root().querySelector('#cfg-ia-endpoint').value.trim(),
+      ia_token: root().querySelector('#cfg-ia-token').value.trim(),
+    });
+    toast('IA salva'); refresh();
+  };
+  root().querySelector('#cfg-ia-test').onclick = async () => {
+    const fb = root().querySelector('#cfg-ia-fb');
+    // salva antes de testar para o adaptador ler o endpoint atual
+    setConfig({
+      ia_endpoint: root().querySelector('#cfg-ia-endpoint').value.trim(),
+      ia_token: root().querySelector('#cfg-ia-token').value.trim(),
+    });
+    fb.innerHTML = '<small class="hint">Testando...</small>';
+    try {
+      const r = await testarIA();
+      fb.innerHTML = `<div class="alert info" style="font-size:12.5px">Conectado ✔ (modelo ${esc(r.model || '?')})</div>`;
+    } catch (e) {
+      fb.innerHTML = `<div class="alert danger" style="font-size:12.5px">Falha: ${esc(e.message)}</div>`;
+    }
   };
   root().querySelector('#prova-save').onclick = () => {
     const u = store.all('user')[0];
@@ -914,9 +977,29 @@ Língua Portuguesa
 Raciocínio Lógico"></textarea></label>
     <label class="field"><span class="lab">Data da prova (opcional)</span>
       <input type="date" id="mig-prova" value="${esc(provaAtual)}"></label>
-    <button class="btn primary" id="mig-next">Gerar sugestões →</button>
-    <small class="hint">A extração automática do PDF do edital por IA é uma melhoria futura (exige chave server-side).</small>
+    <div class="row" style="gap:8px">
+      <button class="btn primary" id="mig-next">Gerar sugestões →</button>
+      ${iaDisponivel() ? `<button class="btn" id="mig-ia">✨ Extrair com IA</button>` : ''}
+    </div>
+    <small class="hint">${iaDisponivel()
+      ? 'Cole o texto bruto do edital e use "Extrair com IA" para limpar a lista automaticamente.'
+      : 'A extração automática por IA aparece aqui quando o backend de IA estiver configurado (Painel → IA).'}</small>
   `, { title: '🔀 Migração — passo 1/2' });
+
+  const btnIA = body.querySelector('#mig-ia');
+  if (btnIA) btnIA.onclick = async () => {
+    const texto = body.querySelector('#mig-txt').value.trim();
+    if (!texto) return toast('Cole o texto do edital primeiro');
+    btnIA.disabled = true; btnIA.textContent = '✨ Extraindo...';
+    try {
+      const r = await extrairEdital(texto);
+      if (r.itens && r.itens.length) {
+        body.querySelector('#mig-txt').value = r.itens.join('\n');
+        toast(`${r.itens.length} itens extraídos`);
+      } else toast('Nada extraído — revise o texto');
+    } catch (e) { toast('Falha na IA: ' + e.message); }
+    finally { btnIA.disabled = false; btnIA.textContent = '✨ Extrair com IA'; }
+  };
 
   body.querySelector('#mig-next').onclick = () => {
     const linhas = body.querySelector('#mig-txt').value.split('\n').map(s => s.trim()).filter(Boolean);

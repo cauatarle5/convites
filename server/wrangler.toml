@@ -1,0 +1,14 @@
+# Cloudflare Worker — backend de IA da Prep ANPD.
+# Deploy: `npm install` e depois `npx wrangler deploy` (ver README.md).
+name = "prep-anpd-ia"
+main = "worker.js"
+compatibility_date = "2025-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Variáveis públicas (NÃO coloque segredos aqui — use `wrangler secret put`).
+[vars]
+ALLOW_ORIGIN = "*"   # troque para "https://cauatarle5.github.io" ao publicar
+
+# Segredos (configure fora do arquivo, ver README):
+#   npx wrangler secret put ANTHROPIC_API_KEY
+#   npx wrangler secret put APP_TOKEN        # opcional, protege o endpoint pago

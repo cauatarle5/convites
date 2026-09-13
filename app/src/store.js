@@ -118,6 +118,8 @@ const DEFAULT_CONFIG = {
   pomodoro_pausa_min: 5,
   tempo_diario_min: 120,      // orçamento diário de estudo
   prioridade_amortecimento: true, // usa base + (1-base)*fator (ver priority.js)
+  ia_endpoint: '',            // URL do backend de IA (server/worker.js); vazio = IA desligada
+  ia_token: '',               // APP_TOKEN opcional do backend
 };
 export function getConfig() {
   const rows = readTable('config');
