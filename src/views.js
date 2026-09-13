@@ -18,7 +18,7 @@ import {
 import { gerarCaderno } from './caderno.js';
 import { sugerirMatches, aplicarMigracao } from './migracao.js';
 import { iaDisponivel, corrigirResumo, extrairEdital, testarIA } from './ia.js';
-import { carregarSeedLGPD, seedJaCarregado } from './seed_content.js';
+import { carregarSeed, seedJaCarregado } from './seed_content.js';
 
 let refresh = () => {};
 export function setRefresh(fn) { refresh = fn; }
@@ -862,10 +862,11 @@ function viewPainel() {
 
     <h2>Conteúdo-semente</h2>
     <div class="card">
-      <p class="subtle" style="margin:0 0 10px;font-size:13px">Importa tópicos + pontos-chave da LGPD,
-        apoios didáticos e um banco de <b>questões autorais (fonte análoga)</b>. É idempotente (não duplica)
-        e <b>não inclui texto legal</b> — este você cola da fonte oficial. ${seedJaCarregado() ? '<b>Já carregado.</b>' : ''}</p>
-      <button class="btn primary" id="seed-lgpd">${seedJaCarregado() ? 'Recarregar (adiciona o que faltar)' : 'Carregar conteúdo-semente (LGPD)'}</button>
+      <p class="subtle" style="margin:0 0 10px;font-size:13px">Importa tópicos + pontos-chave e um banco de
+        <b>questões autorais (fonte análoga)</b> de todas as disciplinas (LGPD, Direito Administrativo,
+        Segurança da Informação, Português e RLM). É idempotente (não duplica) e <b>não inclui texto legal</b> —
+        este você cola da fonte oficial. ${seedJaCarregado() ? '<b>Já carregado.</b>' : ''}</p>
+      <button class="btn primary" id="seed-lgpd">${seedJaCarregado() ? 'Recarregar (adiciona o que faltar)' : 'Carregar conteúdo-semente'}</button>
     </div>
 
     <h2>Dados</h2>
@@ -890,9 +891,9 @@ function wirePainel() {
     toast('Configurações salvas'); refresh();
   };
   root().querySelector('#seed-lgpd').onclick = () => {
-    const r = carregarSeedLGPD();
+    const r = carregarSeed();
     if (r.erro) return toast(r.erro);
-    toast(`Semente: +${r.topicosAdd} tópicos, +${r.questoesAdd} questões, +${r.conteudosAdd} conteúdos`);
+    toast(`Semente: +${r.topicosAdd} tópicos, +${r.questoesAdd} questões em ${r.disciplinasAtingidas} disciplinas`);
     refresh();
   };
   root().querySelector('#cfg-ia-save').onclick = () => {
