@@ -58,6 +58,13 @@ Da **Fase 3**, já entram (sem depender de chave de API):
   aprovados, pontos de reforço, erros recorrentes e flashcards, via impressão do
   navegador ("salvar como PDF"), **regerável a qualquer momento**.
 
+### Conteúdo-semente (Painel → Conteúdo-semente)
+
+Botão idempotente que importa tópicos + pontos-chave da LGPD, apoios didáticos e
+um banco de **questões autorais marcadas `fonte_analoga`** (`src/seed_content.js`).
+Respeita o modelo de segurança: **não semeia `texto_legal`** — este é colado
+manualmente da fonte oficial por Ricardo/Cauã.
+
 ### As duas fórmulas (documentadas no código)
 
 - **SRS (`src/srs.js`)** — Leitner 5 caixas com intervalos `1·3·7·16·35` dias.

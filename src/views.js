@@ -18,6 +18,7 @@ import {
 import { gerarCaderno } from './caderno.js';
 import { sugerirMatches, aplicarMigracao } from './migracao.js';
 import { iaDisponivel, corrigirResumo, extrairEdital, testarIA } from './ia.js';
+import { carregarSeedLGPD, seedJaCarregado } from './seed_content.js';
 
 let refresh = () => {};
 export function setRefresh(fn) { refresh = fn; }
@@ -859,6 +860,14 @@ function viewPainel() {
       <button class="btn primary" id="migracao">🔀 Iniciar reconciliação do edital</button>
     </div>
 
+    <h2>Conteúdo-semente</h2>
+    <div class="card">
+      <p class="subtle" style="margin:0 0 10px;font-size:13px">Importa tópicos + pontos-chave da LGPD,
+        apoios didáticos e um banco de <b>questões autorais (fonte análoga)</b>. É idempotente (não duplica)
+        e <b>não inclui texto legal</b> — este você cola da fonte oficial. ${seedJaCarregado() ? '<b>Já carregado.</b>' : ''}</p>
+      <button class="btn primary" id="seed-lgpd">${seedJaCarregado() ? 'Recarregar (adiciona o que faltar)' : 'Carregar conteúdo-semente (LGPD)'}</button>
+    </div>
+
     <h2>Dados</h2>
     <div class="card"><div class="row wrap" style="gap:8px">
       <button class="btn" id="exp">Exportar dados (JSON)</button>
@@ -879,6 +888,12 @@ function wirePainel() {
       prioridade_amortecimento: root().querySelector('#cfg-amort').checked,
     });
     toast('Configurações salvas'); refresh();
+  };
+  root().querySelector('#seed-lgpd').onclick = () => {
+    const r = carregarSeedLGPD();
+    if (r.erro) return toast(r.erro);
+    toast(`Semente: +${r.topicosAdd} tópicos, +${r.questoesAdd} questões, +${r.conteudosAdd} conteúdos`);
+    refresh();
   };
   root().querySelector('#cfg-ia-save').onclick = () => {
     setConfig({
