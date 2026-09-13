@@ -75,6 +75,10 @@ README.md           # doc do produto e das fases
 - IA: cliente nunca fala direto com a API da Anthropic. Vai pelo worker em
   `server/` (modelo `claude-opus-5`, structured outputs). Sem endpoint
   configurado, o app fica 100% no modo manual.
+- Acessibilidade: modais (`ui.js`) têm foco inicial, `Escape` para fechar, trap
+  de `Tab` e devolvem o foco ao gatilho; toasts são `role=status`; botões
+  só-ícone levam `aria-label`; tab ativa usa `aria-current="page"`; foco de
+  teclado usa `:focus-visible`. Mantenha esses padrões ao criar telas novas.
 
 ## Backend de IA (`server/`)
 

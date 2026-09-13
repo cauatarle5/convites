@@ -40,34 +40,62 @@ export function badgeRevisado(revisado) {
 
 /* ---- modal -------------------------------------------------------------- */
 let onClose = null;
+let ultimoFoco = null;   // elemento a receber o foco de volta ao fechar
+let onKeydown = null;    // handler de Escape + trap de Tab
+const FOCUSAVEIS = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+
 export function openModal(innerHTML, opts = {}) {
+  ultimoFoco = document.activeElement;
   const root = document.getElementById('modal-root');
+  const titId = 'm-title';
   root.innerHTML = `
     <div class="modal-back" id="mb">
-      <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="${titId}" tabindex="-1">
         <div class="row close">
-          <h2 style="flex:1">${esc(opts.title || '')}</h2>
-          <button class="btn ghost sm" id="m-x">✕</button>
+          <h2 style="flex:1" id="${titId}">${esc(opts.title || '')}</h2>
+          <button class="btn ghost sm" id="m-x" aria-label="Fechar">✕</button>
         </div>
         <div id="m-body">${innerHTML}</div>
       </div>
     </div>`;
   onClose = opts.onClose || null;
   const back = document.getElementById('mb');
+  const dialog = back.querySelector('.modal');
   document.getElementById('m-x').onclick = closeModal;
   back.onclick = e => { if (e.target === back) closeModal(); };
+
+  // Escape fecha; Tab faz o ciclo (trap) dentro do modal.
+  onKeydown = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); closeModal(); return; }
+    if (e.key !== 'Tab') return;
+    const foc = [...dialog.querySelectorAll(FOCUSAVEIS)].filter(el => el.offsetParent !== null);
+    if (!foc.length) return;
+    const first = foc[0], last = foc[foc.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
+  document.addEventListener('keydown', onKeydown);
+
+  // Foco inicial: primeiro campo/controle do corpo, senão o próprio diálogo.
+  const alvo = document.getElementById('m-body').querySelector(FOCUSAVEIS) || dialog;
+  setTimeout(() => alvo.focus(), 0);
+
   return document.getElementById('m-body');
 }
 export function closeModal() {
   const root = document.getElementById('modal-root');
   root.innerHTML = '';
+  if (onKeydown) { document.removeEventListener('keydown', onKeydown); onKeydown = null; }
   const cb = onClose; onClose = null;
+  if (ultimoFoco && ultimoFoco.focus) { try { ultimoFoco.focus(); } catch { /* ignora */ } }
+  ultimoFoco = null;
   if (cb) cb();
 }
 
 /* ---- misc --------------------------------------------------------------- */
 export function toast(msg) {
-  const t = h(`<div style="position:fixed;left:50%;bottom:90px;transform:translateX(-50%);
+  const t = h(`<div role="status" aria-live="polite"
+    style="position:fixed;left:50%;bottom:90px;transform:translateX(-50%);
     background:var(--surface-2);border:1px solid var(--line);color:var(--ink);
     padding:10px 16px;border-radius:999px;z-index:200;box-shadow:var(--shadow);font-weight:600">${esc(msg)}</div>`);
   document.body.appendChild(t);

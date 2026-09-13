@@ -18,6 +18,8 @@ function marcarTab(route) {
     // 'topico' pertence à seção Conteúdo
     const ativo = tab === route || (route === 'topico' && tab === 'conteudo');
     a.classList.toggle('active', ativo);
+    if (ativo) a.setAttribute('aria-current', 'page');
+    else a.removeAttribute('aria-current');
   });
 }
 

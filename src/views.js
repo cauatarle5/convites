@@ -323,8 +323,8 @@ function viewFlashcards() {
           ${c.srs.proxima_revisao <= hoje ? '· <b style="color:var(--warn)">vencido</b>' : ''}</div>
       </div>
       <div class="row" style="gap:6px">
-        <button class="btn sm" data-edit="${esc(c.id)}">✎</button>
-        <button class="btn ghost sm" data-del="${esc(c.id)}">🗑</button>
+        <button class="btn sm" data-edit="${esc(c.id)}" aria-label="Editar flashcard" title="Editar">✎</button>
+        <button class="btn ghost sm" data-del="${esc(c.id)}" aria-label="Excluir flashcard" title="Excluir">🗑</button>
       </div>
     </div>`).join('');
   return `
@@ -418,7 +418,7 @@ function viewQuestoes() {
       </div>
       <div class="row" style="gap:6px">
         <button class="btn primary sm" data-play="${esc(q.id)}">Responder</button>
-        <button class="btn ghost sm" data-delq="${esc(q.id)}">🗑</button>
+        <button class="btn ghost sm" data-delq="${esc(q.id)}" aria-label="Excluir questão" title="Excluir">🗑</button>
       </div>
     </div>`;
   }).join('');
@@ -689,8 +689,8 @@ function viewTopico(id) {
     <div class="card tight conteudo tipo-${c.tipo}">
       <div class="row wrap" style="gap:6px">${badgeTipoConteudo(c.tipo)} ${badgeRevisado(c.revisado_por_humano)}
         <span class="spacer"></span>
-        <button class="btn ghost sm" data-editc="${esc(c.id)}">✎</button>
-        <button class="btn ghost sm" data-delc="${esc(c.id)}">🗑</button></div>
+        <button class="btn ghost sm" data-editc="${esc(c.id)}" aria-label="Editar conteúdo" title="Editar">✎</button>
+        <button class="btn ghost sm" data-delc="${esc(c.id)}" aria-label="Excluir conteúdo" title="Excluir">🗑</button></div>
       ${c.titulo ? `<h3 style="margin-top:8px">${esc(c.titulo)}</h3>` : ''}
       <div class="corpo">${esc(c.corpo)}</div>
       ${c.fonte ? `<div class="fonte">Fonte: ${esc(c.fonte)}</div>` : ''}
@@ -790,7 +790,7 @@ function viewPainel() {
       <div class="meta">${real} / ${m.valor_alvo} · ${pct}%</div>
       <div style="height:6px;background:var(--bg);border-radius:6px;margin-top:6px;overflow:hidden">
         <div style="height:100%;width:${pct}%;background:var(--accent-2)"></div></div>
-    </div><button class="btn ghost sm" data-delm="${esc(m.id)}">🗑</button></div>`;
+    </div><button class="btn ghost sm" data-delm="${esc(m.id)}" aria-label="Excluir meta" title="Excluir">🗑</button></div>`;
   }).join('') || '<div class="empty">Nenhuma meta.</div>';
 
   const cfg = getConfig();
