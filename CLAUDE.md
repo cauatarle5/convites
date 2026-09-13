@@ -30,6 +30,7 @@ sw.js               # service worker: precache do app shell (bump CACHE ao mudar
 icons/              # ícones PNG do PWA (bullseye da marca)
 server/             # backend de IA (Cloudflare Worker) — chave fica aqui
 convite/index.html  # convite original (não relacionado ao app)
+tests/core.test.mjs # regressão das fórmulas de SRS e priorização (Node, sem navegador)
 README.md           # doc do produto e das fases
 ```
 
@@ -50,6 +51,10 @@ README.md           # doc do produto e das fases
   os PNGs em `icons/` e faça bump do `CACHE` em `sw.js`.
 - Testar service worker: use um contexto Playwright com `serviceWorkers: 'allow'`
   e `waitUntil: 'load'`.
+- Teste de regressão do núcleo (SRS + priorização), sem navegador:
+  `echo '{"type":"module"}' > package.json && node tests/core.test.mjs; rm -f package.json`
+  (o package.json temporário é só para o Node tratar os `.js` como ESM; remova
+  antes de commitar). Rode-o após mexer em `srs.js` ou `priority.js`.
 
 ## Regras de conteúdo (NÃO QUEBRAR — seções 4/19 do briefing)
 
