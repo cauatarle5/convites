@@ -221,9 +221,34 @@ export function resetAll() {
   localStorage.removeItem(`${NS}:__schema__`);
 }
 
-/* Export/import do estado inteiro (base para migração futura) */
+/* Export/import do estado inteiro (base para migração futura / backup) */
 export function exportState() {
   const out = { schema: SCHEMA_VERSION };
   TABLES.forEach(t => { out[t] = readTable(t); });
   return out;
+}
+
+/**
+ * Importa um backup gerado por exportState(). SUBSTITUI todo o estado local.
+ * Valida minimamente (precisa ter `schema` e um array `user` não vazio).
+ * Só escreve as tabelas conhecidas (ignora chaves estranhas do arquivo).
+ * @returns {{ok:boolean, erro?:string, tabelas?:number}}
+ */
+export function importState(obj) {
+  if (!obj || typeof obj !== 'object') return { ok: false, erro: 'Arquivo inválido' };
+  if (!('schema' in obj)) return { ok: false, erro: 'Backup sem "schema" — arquivo não reconhecido' };
+  if (!Array.isArray(obj.user) || obj.user.length === 0) {
+    return { ok: false, erro: 'Backup sem usuário — arquivo não reconhecido' };
+  }
+  // limpa e regrava apenas as tabelas conhecidas
+  let n = 0;
+  TABLES.forEach(t => {
+    const rows = Array.isArray(obj[t]) ? obj[t] : [];
+    writeTable(t, rows);
+    n++;
+  });
+  localStorage.setItem(`${NS}:__schema__`, String(obj.schema || SCHEMA_VERSION));
+  const u = readTable('user')[0];
+  CURRENT_USER_ID = u ? u.id : 'user_ricardo';
+  return { ok: true, tabelas: n };
 }

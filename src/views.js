@@ -3,7 +3,7 @@
  * ativa, formulários de curadoria, flashcards, questões).
  * ============================================================================= */
 import {
-  store, getConfig, setConfig, uid, todayISO, addDaysISO, resetAll, exportState,
+  store, getConfig, setConfig, uid, todayISO, addDaysISO, resetAll, exportState, importState,
 } from './store.js';
 import { novoEstadoSRS } from './srs.js';
 import {
@@ -807,6 +807,9 @@ function viewPainel() {
       <div class="tile"><div class="n">${st.revisoesPendentes}</div><div class="k">revisões pendentes</div></div>
     </div>
 
+    <h2>Evolução <span class="dim" style="font-size:12px;font-weight:400">· minutos de estudo, últimos 14 dias</span></h2>
+    <div class="card">${graficoEvolucao()}</div>
+
     <h2>Desempenho por disciplina <span class="dim" style="font-size:12px;font-weight:400">· faixa qualitativa, não %</span></h2>
     <div class="stack">${faixas}</div>
 
@@ -876,8 +879,10 @@ function viewPainel() {
     <h2>Dados</h2>
     <div class="card"><div class="row wrap" style="gap:8px">
       <button class="btn" id="exp">Exportar dados (JSON)</button>
+      <button class="btn" id="imp">Importar dados (JSON)</button>
+      <input type="file" id="imp-file" accept="application/json,.json" hidden>
       <button class="btn dangerbtn" id="reset">Recomeçar do zero</button>
-    </div><small class="hint">Exportar é a base para uma futura migração ao backend (o schema já usa user_id).</small></div>
+    </div><small class="hint">Backup: exporte para guardar/mover entre aparelhos; importar <b>substitui</b> os dados atuais. O schema já usa user_id (base p/ migração ao backend).</small></div>
 
     <p style="text-align:center;margin:22px 0 6px;font-size:12px" class="dim">
       Prep ANPD · <a href="convite/" class="dim" style="text-decoration:underline">ver o convite</a>
@@ -936,6 +941,23 @@ function wirePainel() {
     const blob = new Blob([JSON.stringify(exportState(), null, 2)], { type: 'application/json' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
     a.download = `prep-anpd-${todayISO()}.json`; a.click();
+  };
+  const impFile = root().querySelector('#imp-file');
+  root().querySelector('#imp').onclick = () => impFile.click();
+  impFile.onchange = () => {
+    const file = impFile.files && impFile.files[0];
+    if (!file) return;
+    if (!confirm('Importar este backup SUBSTITUI todos os dados atuais. Continuar?')) { impFile.value = ''; return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      let obj;
+      try { obj = JSON.parse(reader.result); } catch { toast('Arquivo não é um JSON válido'); impFile.value = ''; return; }
+      const r = importState(obj);
+      if (!r.ok) { toast(r.erro || 'Falha ao importar'); impFile.value = ''; return; }
+      toast('Backup importado ✔'); location.reload();
+    };
+    reader.onerror = () => { toast('Não foi possível ler o arquivo'); impFile.value = ''; };
+    reader.readAsText(file);
   };
   root().querySelector('#reset').onclick = () => {
     if (confirm('Isso apaga TODOS os dados locais. Continuar?')) { resetAll(); location.reload(); }
@@ -1089,6 +1111,64 @@ function fluxoMigracaoPasso2({ sugestoes, oficiais, provaData }) {
     toast(`Migração aplicada: ${r.confirmadas} confirmada(s), ${r.novas} nova(s), ${r.foras} fora do edital`);
     refresh();
   };
+}
+
+/* =============================================================================
+ * Gráfico de evolução (Painel) — colunas de minutos/dia nos últimos 14 dias.
+ * Série única, magnitude ao longo do tempo: um acento só, eixos recessivos,
+ * tooltip nativo por barra (<title>) e rótulo acessível. Sem eixo duplo.
+ * ============================================================================= */
+function graficoEvolucao() {
+  const hoje = todayISO();
+  const dias = [];
+  for (let k = 13; k >= 0; k--) dias.push(addDaysISO(hoje, -k));
+  const porDia = {};
+  store.all('sessao_estudo').forEach(s => { porDia[s.data] = (porDia[s.data] || 0) + (s.tempo_real_min || 0); });
+  const valores = dias.map(d => porDia[d] || 0);
+  const total = valores.reduce((a, b) => a + b, 0);
+  if (total === 0) {
+    return `<div class="empty">Ainda sem sessões registradas. Faça um Pomodoro para começar a ver sua evolução.</div>`;
+  }
+
+  const W = 340, H = 132, padL = 6, padR = 6, padTop = 12, padBottom = 22;
+  const plotH = H - padTop - padBottom, y0 = padTop + plotH;
+  const maxV = Math.max(30, ...valores);
+  const slot = (W - padL - padR) / dias.length;
+  const barW = slot * 0.62;
+
+  const barras = dias.map((d, i) => {
+    const v = valores[i];
+    const h = v > 0 ? Math.max(2, (v / maxV) * plotH) : 2;
+    const x = padL + i * slot + (slot - barW) / 2;
+    const y = y0 - h;
+    const hojeBar = d === hoje;
+    const cor = v === 0 ? 'var(--line)' : (hojeBar ? 'var(--accent-2)' : 'var(--accent)');
+    const [ , m, dd] = d.split('-');
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}"
+      rx="3" style="fill:${cor}"><title>${dd}/${m}: ${v} min</title></rect>`;
+  }).join('');
+
+  // rótulos do eixo x: início, meio e hoje
+  const idxs = [0, 7, 13];
+  const labels = idxs.map(i => {
+    const [ , m, dd] = dias[i].split('-');
+    const x = padL + i * slot + slot / 2;
+    return `<text x="${x.toFixed(1)}" y="${H - 6}" text-anchor="middle"
+      style="fill:var(--ink-dim);font-size:9px">${dd}/${m}</text>`;
+  }).join('');
+
+  const media = Math.round(total / dias.length);
+  return `
+    <svg viewBox="0 0 ${W} ${H}" width="100%" role="img"
+      aria-label="Minutos de estudo por dia nos últimos 14 dias. Total ${total} minutos, média ${media} por dia.">
+      <line x1="${padL}" y1="${y0}" x2="${W - padR}" y2="${y0}" style="stroke:var(--line);stroke-width:1"/>
+      ${barras}
+      ${labels}
+    </svg>
+    <div class="row" style="justify-content:space-between;margin-top:8px">
+      <small class="hint" style="margin:0">Total: <b>${fmtMin(total)}</b> · média ${media} min/dia</small>
+      <small class="hint" style="margin:0"><span style="color:var(--accent-2)">▮</span> hoje</small>
+    </div>`;
 }
 
 /* =============================================================================
