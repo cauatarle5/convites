@@ -1,0 +1,6 @@
+# Não enviar estes caminhos para a Vercel (o deploy é só a plataforma).
+convite/
+server/
+tests/
+DEPLOY.md
+CLAUDE.md

@@ -885,9 +885,7 @@ function viewPainel() {
       <button class="btn dangerbtn" id="reset">Recomeçar do zero</button>
     </div><small class="hint">Backup: exporte para guardar/mover entre aparelhos; importar <b>substitui</b> os dados atuais. O schema já usa user_id (base p/ migração ao backend).</small></div>
 
-    <p style="text-align:center;margin:22px 0 6px;font-size:12px" class="dim">
-      Prep ANPD · <a href="convite/" class="dim" style="text-decoration:underline">ver o convite</a>
-    </p>
+    <p style="text-align:center;margin:22px 0 6px;font-size:12px" class="dim">Prep ANPD</p>
   `;
 }
 function wirePainel() {
