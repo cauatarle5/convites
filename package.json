@@ -2,7 +2,7 @@
   "name": "prep-anpd",
   "private": true,
   "type": "module",
-  "description": "Plataforma Prep ANPD (site estático) + Cloudflare Pages Functions de IA.",
+  "description": "Plataforma Prep ANPD (site estático) + funções de IA (Vercel /api ou Cloudflare Pages functions/).",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.70.1"
   }

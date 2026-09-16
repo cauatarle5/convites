@@ -29,10 +29,12 @@ src/                # ES modules do app (sem build)
 manifest.webmanifest # PWA (instalável)
 sw.js               # service worker: precache do app shell (bump CACHE ao mudar assets); ignora /api
 icons/              # ícones PNG do PWA (bullseye da marca)
-functions/          # Cloudflare Pages Functions de IA (recomendado)
+api/                # Vercel Serverless Functions de IA (host escolhido): health/corrigir-resumo/extrair-edital.js
+functions/          # Cloudflare Pages Functions de IA (alternativa)
   api/health.js, api/corrigir-resumo.js, api/extrair-edital.js
-  _lib/ia.js        # lógica compartilhada (SDK, structured outputs); "_" não vira rota
-package.json        # raiz: declara @anthropic-ai/sdk (o Pages instala no build). type:module
+  _lib/ia.js        # lógica compartilhada (SDK, structured outputs) — usada por AMBOS os hosts
+vercel.json         # Vercel: sem build, saída = raiz; /api vira função automaticamente
+package.json        # raiz: declara @anthropic-ai/sdk (Vercel/Pages instalam no deploy). type:module
 server/             # backend de IA ALTERNATIVO (Worker isolado) — ver server/README.md
 convite/index.html  # convite original (não relacionado ao app)
 tests/core.test.mjs # regressão das fórmulas de SRS e priorização (Node, sem navegador)
@@ -84,11 +86,12 @@ README.md           # doc do produto e das fases
 - Priorização: produto de 5 fatores 0..1 com desconto `(1 - domínio)` e
   amortecimento opcional `base + (1-base)·fator` (base 0.2, ligado por padrão).
   Ver comentários em `priority.js`.
-- IA: cliente nunca fala direto com a API da Anthropic. Backend recomendado =
-  **Cloudflare Pages Functions** em `functions/api/*` (mesmo domínio; o cliente
-  detecta `/api` no boot — zero config). Alternativa = Worker isolado em
-  `server/` colado em Painel → IA. Modelo `claude-opus-5`, structured outputs.
-  Sem backend, o app fica 100% no modo manual. Deploy: `DEPLOY.md`.
+- IA: cliente nunca fala direto com a API da Anthropic. Host escolhido =
+  **Vercel** (funções em `api/*`; mesmo domínio; o cliente detecta `/api` no boot
+  — zero config). A lógica é compartilhada em `functions/_lib/ia.js` e reusada
+  também pelas Cloudflare Pages Functions (`functions/api/*`) e pelo Worker
+  isolado (`server/`). Modelo `claude-opus-5`, structured outputs. Sem backend,
+  o app fica 100% no modo manual. Deploy: `DEPLOY.md`.
 - Acessibilidade: modais (`ui.js`) têm foco inicial, `Escape` para fechar, trap
   de `Tab` e devolvem o foco ao gatilho; toasts são `role=status`; botões
   só-ícone levam `aria-label`; tab ativa usa `aria-current="page"`; foco de
