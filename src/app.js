@@ -3,6 +3,7 @@
  * ============================================================================= */
 import { initStore } from './store.js';
 import { render, setRefresh, atualizarCountdown } from './views.js';
+import { detectarIA } from './ia.js';
 
 function parseHash() {
   const raw = (location.hash || '#/hoje').replace(/^#\//, '');
@@ -43,6 +44,9 @@ function boot() {
   atualizarCountdown();
   navigate();
   registrarServiceWorker();
+  // Detecta IA no mesmo domínio (Pages Functions em /api). Se achar, re-renderiza
+  // para os botões de IA aparecerem sem configuração manual.
+  detectarIA().then(ok => { if (ok) navigate(); });
 }
 
 /* PWA: registra o service worker (offline + instalável). Falha silenciosa em

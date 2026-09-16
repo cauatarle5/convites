@@ -42,6 +42,7 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // cross-origin: rede direta
+  if (url.pathname.startsWith('/api/')) return;    // backend de IA: nunca cachear
 
   e.respondWith((async () => {
     const cache = await caches.open(CACHE);

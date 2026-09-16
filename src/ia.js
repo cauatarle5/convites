@@ -1,24 +1,43 @@
 /* =============================================================================
- * ia.js — Adaptador client-side para o backend de IA (server/worker.js).
+ * ia.js — Adaptador client-side para o backend de IA.
  * -----------------------------------------------------------------------------
  * O app NUNCA fala com a API da Anthropic diretamente (a chave é secreta e
- * ficaria exposta num site estático). Ele chama o worker configurado em
- * config.ia_endpoint. Se não houver endpoint, iaDisponivel() é false e a UI
- * mantém o fluxo manual (checklist de resumo, lista de edital colada).
+ * ficaria exposta num site estático). Ele chama um backend, que pode ser:
+ *   (a) MESMO ORIGEM: quando hospedado no Cloudflare Pages, as Functions ficam
+ *       em /api/* — detectadas automaticamente no boot (zero configuração); ou
+ *   (b) ENDPOINT CONFIGURADO: um worker/serviço externo colado em Painel → IA.
+ * Sem nenhum dos dois, iaDisponivel() é false e a UI mantém o fluxo manual.
  * ============================================================================= */
 import { getConfig } from './store.js';
 
-export function iaDisponivel() {
-  return !!(getConfig().ia_endpoint || '').trim();
+const SAME_ORIGIN_BASE = `${location.origin}/api`;
+let sameOriginIA = false; // definido por detectarIA() no boot
+
+/** Base efetiva: endpoint configurado tem prioridade; senão, /api same-origin. */
+function baseAtual() {
+  const cfg = (getConfig().ia_endpoint || '').trim().replace(/\/+$/, '');
+  if (cfg) return { base: cfg, token: getConfig().ia_token || '' };
+  if (sameOriginIA) return { base: SAME_ORIGIN_BASE, token: getConfig().ia_token || '' };
+  return null;
+}
+
+export function iaDisponivel() { return !!baseAtual(); }
+
+/** Sonda /api/health no mesmo domínio (Pages Functions). Chamado no boot. */
+export async function detectarIA() {
+  try {
+    const r = await fetch(`${SAME_ORIGIN_BASE}/health`, { method: 'GET' });
+    sameOriginIA = r.ok;
+  } catch { sameOriginIA = false; }
+  return sameOriginIA;
 }
 
 async function chamar(rota, corpo) {
-  const cfg = getConfig();
-  const base = (cfg.ia_endpoint || '').trim().replace(/\/+$/, '');
-  if (!base) throw new Error('IA não configurada');
+  const alvo = baseAtual();
+  if (!alvo) throw new Error('IA não configurada');
   const headers = { 'Content-Type': 'application/json' };
-  if (cfg.ia_token) headers.Authorization = `Bearer ${cfg.ia_token}`;
-  const resp = await fetch(`${base}${rota}`, {
+  if (alvo.token) headers.Authorization = `Bearer ${alvo.token}`;
+  const resp = await fetch(`${alvo.base}${rota}`, {
     method: 'POST', headers, body: JSON.stringify(corpo),
   });
   const data = await resp.json().catch(() => ({}));
@@ -36,11 +55,11 @@ export function extrairEdital(texto) {
   return chamar('/extrair-edital', { texto });
 }
 
-/** Teste rápido de conectividade (GET /health). */
+/** Teste de conectividade (GET /health) contra a base efetiva. */
 export async function testarIA() {
-  const base = (getConfig().ia_endpoint || '').trim().replace(/\/+$/, '');
-  if (!base) throw new Error('IA não configurada');
-  const resp = await fetch(`${base}/health`);
+  const alvo = baseAtual();
+  if (!alvo) throw new Error('IA não configurada');
+  const resp = await fetch(`${alvo.base}/health`);
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
   return resp.json();
 }

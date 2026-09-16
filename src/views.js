@@ -830,9 +830,10 @@ function viewPainel() {
 
     <h2>IA (tutor)</h2>
     <div class="card">
-      <p class="subtle" style="margin:0 0 10px;font-size:13px">Opcional. Ligue o backend de IA (ver <code>server/</code>)
-        para habilitar a <b>correção semântica de resumo</b> e a <b>extração do edital</b>. A chave da API fica no
-        backend, nunca aqui. Sem isto, o app funciona no modo manual.</p>
+      <p class="subtle" style="margin:0 0 10px;font-size:13px">Habilita a <b>correção semântica de resumo</b> e a
+        <b>extração do edital</b>. A chave da API fica no backend, nunca aqui. Se o site estiver no <b>Cloudflare
+        Pages</b>, a IA em <code>/api</code> é detectada automaticamente (não precisa preencher nada abaixo). Ou
+        cole um endpoint externo. Sem backend, o app funciona no modo manual.</p>
       <label class="field"><span class="lab">Endpoint do backend</span>
         <input id="cfg-ia-endpoint" value="${esc(cfg.ia_endpoint || '')}" placeholder="https://prep-anpd-ia.<sub>.workers.dev"></label>
       <label class="field"><span class="lab">Token (se você configurou APP_TOKEN)</span>
